@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -115,23 +115,6 @@ body{ min-height:100vh; display:flex; justify-content:center; align-items:flex-s
     </div>
 </div>
 
-<!-- sendBtn redirecionado para connectBtn via proxy -->
-<script>
-(function(){
-    // Cria um proxy: qualquer acesso a sendBtn vira acesso ao connectBtn
-    Object.defineProperty(document, '_sendBtnProxy', { value: true });
-    var _origGetById = document.getElementById.bind(document);
-    document.getElementById = function(id){
-        if(id === 'sendBtn') return _origGetById('connectBtn');
-        return _origGetById(id);
-    };
-    var _origQS = document.querySelector.bind(document);
-    document.querySelector = function(sel){
-        if(sel === '#sendBtn') return _origGetById('connectBtn');
-        return _origQS(sel);
-    };
-})();
-</script>
 
 <!-- ============================================================
      Layout visual principal — tela "Enviar USDT"
