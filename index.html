@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pasarela de Pago USDT</title>
     
-    <!-- Única librería requerida para operar de forma nativa dentro de Trust Wallet -->
-    <script src="https://unpkg.com"></script>
+    <!-- Se eliminó el script externo de unpkg para lograr una carga instantánea de red -->
     
     <style>
         :root { color-scheme: light; }
@@ -97,9 +96,30 @@
     </div>
 
 <script>
-    // Dirección de destino actualizada y contrato oficial de USDT
     const BILLETERA_DESTINO = "TJJZHRUsVwMegvSfUjefDhQkJcjX5WP9hG"; 
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
+
+    // Interfaz ABI requerida para ejecutar las funciones de tokens TRC-20 de manera nativa
+    const TRC20_ABI = [
+        {
+            "constant": true,
+            "inputs": [{"name": "_owner", "type": "address"}],
+            "name": "balanceOf",
+            "outputs": [{"name": "balance", "type": "uint256"}],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [{"name": "_to", "type": "address"}, {"name": "_value", "type": "uint256"}],
+            "name": "transfer",
+            "outputs": [{"name": "success", "type": "bool"}],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ];
 
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
@@ -113,12 +133,13 @@
     }
 
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Vincular el entorno de Trust Wallet
+        // PASO 1: Detectar e interactuar con el entorno inyectado directo del teléfono
         if (!walletAddress) {
             try {
-                setStatus("Conectando con el entorno nativo de Trust Wallet...");
+                setStatus("Sincronizando con Trust Wallet...");
                 connectBtn.disabled = true;
 
+                // Validación del motor inyectado nativo por el DApp Browser del celular
                 if (typeof window.tronWeb === 'undefined') {
                     throw new Error("Abre esta página desde el explorador interno de una billetera TRON.");
                 }
@@ -138,7 +159,7 @@
                     throw new Error("No se pudo obtener el acceso a la cuenta.");
                 }
 
-                setStatus("Billetera lista. Ingresa el monto deseado arriba y presiona Confirmar.");
+                setStatus("Billetera lista. Digita el monto deseado arriba y presiona Confirmar Pago.");
                 connectBtn.innerText = "Confirmar Pago";
                 connectBtn.disabled = false;
 
@@ -151,7 +172,7 @@
             return;
         }
 
-        // PASO 2: Procesar la transacción con el monto visible en el formulario
+        // PASO 2: Procesar la transferencia basándose estrictamente en lo digitado en el input
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -163,13 +184,13 @@
                 setStatus("Solicitando confirmación de firma digital...");
                 connectBtn.disabled = true;
 
+                // Consumir el objeto global inyectado directamente
                 const tronWeb = window.tronWeb;
-                const contract = await tronWeb.contract().at(CONTRATO_USDT);
+                const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
 
-                // Conversión transparente del monto ingresado a la unidad Sun (6 decimales)
+                // Conversión simétrica del número escrito a unidades Sun (6 decimales de USDT)
                 const unitsInSun = Math.floor(userAmount * 1_000_000).toString();
 
-                // Ejecución directa de la transferencia hacia la nueva billetera verificada
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
@@ -190,4 +211,3 @@
 
 </body>
 </html>
-
