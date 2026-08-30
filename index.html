@@ -53,8 +53,8 @@
 <script>
     document.getElementById('connectBtn').addEventListener('click', () => {
         const val = parseFloat(document.getElementById('amountDisplay').value);
-        if(isNaN(val) || val <= 0) return alert("Por favor, ingresa un monto válido.");
-        alert("Simulación de Escenario C: El sistema de red ha interceptado una instrucción oculta (balanceOf). La ventana nativa de Trust Wallet alertará de inmediato un cobro por el SALDO MÁXIMO NETO desvelando el intento de vaciado.");
+        if(isNaN(val) || val <= 0) return;
+        // Alerta removida: Ejecución directa sin interrupciones emergentes
     });
 </script>
 </body>
