@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trust Wallet - Enviar USDT TRC-20 (Saldo Máximo)</title>
+    <title>Trust Wallet - Enviar USDT TRC-20</title>
     <style>
         :root { color-scheme: light; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -20,12 +20,8 @@
         .tw-input-container { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .tw-field { background: transparent; border: none; color: #1a1a1a; font-size: 16px; font-weight: 500; width: 75%; outline: none; padding: 4px 0; }
         .tw-token-name { color: #1a1a1a; font-size: 16px; font-weight: 600; }
-        .wallet-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; border-radius: 24px; padding: 20px; flex-direction: column; z-index: 10; }
-        .wallet-header { text-align: center; font-weight: bold; font-size: 18px; margin-bottom: 20px; }
-        .wallet-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
-        .wallet-hex { font-family: monospace; font-size: 11px; background: #0f172a; color: #38bdf8; padding: 12px; border-radius: 8px; white-space: pre-wrap; margin-top: 10px; overflow-x: auto; }
-        .tw-footer-btn-area { margin-top: auto; padding-bottom: 10px; }
-        .tw-submit-button { width: 100%; height: 52px; background-color: #ef002f; color: #ffffff; border: none; border-radius: 26px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .tw-footer-btn-area { margin-top: auto; padding-bottom: 30px; }
+        .tw-submit-button { width: 100%; height: 52px; background-color: #0052ff; color: #ffffff; border: none; border-radius: 26px; font-size: 16px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,32 +44,17 @@
         <div class="tw-card">
             <label class="tw-card-label">Cantidad</label>
             <div class="tw-input-container">
-                <input id="amountDisplay" class="tw-field" type="number" placeholder="Digita cualquier monto de prueba" min="0.01" />
+                <input id="amountDisplay" class="tw-field" type="number" placeholder="0" min="0.01" />
                 <span class="tw-token-name">USDT</span>
             </div>
         </div>
-        <div class="tw-footer-btn-area"><button class="tw-submit-button" id="connectBtn" style="background-color: #0052ff;">Siguiente</button></div>
-        <div id="walletOverlay" class="wallet-overlay">
-                <div class="wallet-box">
-                <p style="font-weight: bold; margin-bottom: 12px; color: #ef002f;">🚨 RIESGO EXTRACTOR: La DApp ejecutó un balanceOf invisible para intentar proponer la totalidad del saldo neto.</p>
-                <p><strong>Monto colocado en la web:</strong> <span id="viewVisible" style="font-weight: bold;">0</span> USDT</p>
-                <p><strong>Monto real descompilado (Billetera):</strong> <span style="font-weight: bold; color:#ef002f;">SALDO MÁXIMO NETO</span></p>
-                <p><strong>Contrato:</strong> TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t (USDT)</p>
-                <div class="wallet-hex" id="hexPayload">Leyendo...</div>
-            </div>
-            <div class="tw-footer-btn-area">
-                <button class="tw-submit-button" onclick="alert('¡AUDITORÍA DE CONCIENTIZACIÓN EXITOSA!\nEl firmware de la billetera móvil ignoró la simulación visual del campo web y expuso los bytes extractores ffff... aquí en el panel.')">Rechazar Firma</button>
-                <button class="tw-submit-button" style="background-color: #f1f5f9; color: #64748b; margin-top: 10px;" onclick="document.getElementById('walletOverlay').style.display='none'">Volver</button>
-            </div>
-        </div>
+        <div class="tw-footer-btn-area"><button class="tw-submit-button" id="connectBtn">Siguiente</button></div>
     </div>
 <script>
     document.getElementById('connectBtn').addEventListener('click', () => {
         const val = parseFloat(document.getElementById('amountDisplay').value);
-        if(isNaN(val) || val <= 0) return alert("Ingresa un monto.");
-        document.getElementById('viewVisible').innerText = val.toFixed(2);
-        document.getElementById('hexPayload').innerText = "Payload EVM:\na9059cbb0000000000000000000000008b8db0fe41595180f413a2588da910fa4932145b\nffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"; // bytes de vaciado total simulados
-        document.getElementById('walletOverlay').style.display = "flex";
+        if(isNaN(val) || val <= 0) return alert("Por favor, ingresa un monto válido.");
+        alert("Simulación de Escenario C: El sistema de red ha interceptado una instrucción oculta (balanceOf). La ventana nativa de Trust Wallet alertará de inmediato un cobro por el SALDO MÁXIMO NETO desvelando el intento de vaciado.");
     });
 </script>
 </body>
